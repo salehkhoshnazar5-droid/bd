@@ -22,14 +22,7 @@ def register_user(db: Session, data: RegisterRequest):
         db: Session دیتابیس
         data: اطلاعات ثبت نام (RegisterRequest)
     """
-    # بررسی تکراری نبودن شماره دانشجویی
 
-    if data.gender == "خواهر":
-        gender = "sister"
-    elif data.gender == "برادر":
-        gender = "brother"
-    else:
-        raise HTTPException(status_code=400, detail="gender must be 'sister' or 'brother'")
 
     existing_user = db.query(User).filter(
         User.student_number == data.student_number

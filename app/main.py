@@ -7,11 +7,14 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import logging
+from app.routers import admin_audit
 from app.routers import student, admin, test, user, admin_ui, admin_dashboard
 from app.core.database import create_database
 from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
 from app.services.auth_service import create_token_for_user
+
+
 
 # تنظیمات لاگ‌گیری
 logging.basicConfig(
@@ -19,6 +22,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+SWAGGER_OPENAPI_URL = "/openapi.json"
+SWAGGER_TITLE = "سامانه مدیریت بسیج دانشجویی"
+SWAGGER_OAUTH2_REDIRECT_URL = "/docs/oauth2-redirect"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,9 +95,9 @@ app = FastAPI(
         "url": "https://opensource.org/licenses/MIT",
     },
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=SWAGGER_OPENAPI_URL,
     openapi_tags=[
         {"name": "Authentication", "description": "عملیات احراز هویت و مدیریت کاربران"},
         {"name": "UI Authentication", "description": "صفحات وب برای احراز هویت"},
@@ -293,6 +299,15 @@ async def get_api_info():
         }
     }
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",  # به جای app.openapi_url
+        title="سامانه مدیریت بسیج دانشجویی - Swagger UI",  # به جای app.title
+        oauth2_redirect_url=SWAGGER_OAUTH2_REDIRECT_URL,
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
 
 # سلامت سیستم
 @app.get("/health", tags=["System"])
@@ -305,6 +320,18 @@ async def health_check():
         "version": "1.0.0"
     }
 
+@app.get(SWAGGER_OAUTH2_REDIRECT_URL, include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url="/openapi.json",  # به جای app.openapi_url
+        title="سامانه مدیریت بسیج دانشجویی - ReDoc",  # به جای app.title
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
+    )
+
 
 # شامل کردن routerها
 app.include_router(auth_router)
@@ -315,7 +342,7 @@ app.include_router(student.router)
 app.include_router(admin.router)
 app.include_router(admin_ui.router)
 app.include_router(admin_dashboard.router)
-app.include_router(ui_auth_router)
+app.include_router(admin_audit.router)
 
 
 from fastapi.openapi.docs import (
@@ -327,21 +354,21 @@ from fastapi.openapi.docs import (
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     return get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title=app.title + " - Swagger UI",
-        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        openapi_url=SWAGGER_OPENAPI_URL,
+        title=SWAGGER_TITLE + " - Swagger UI",
+        oauth2_redirect_url=SWAGGER_OAUTH2_REDIRECT_URL,
         swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
         swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
     )
 
-@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+@app.get(SWAGGER_OAUTH2_REDIRECT_URL, include_in_schema=False)
 async def swagger_ui_redirect():
     return get_swagger_ui_oauth2_redirect_html()
 
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     return get_redoc_html(
-        openapi_url=app.openapi_url,
-        title=app.title + " - ReDoc",
+        openapi_url=SWAGGER_OPENAPI_URL,
+        title=SWAGGER_TITLE + " - ReDoc",
         redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
     )

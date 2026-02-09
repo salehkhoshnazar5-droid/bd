@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-
 from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -63,16 +62,13 @@ def get_current_user(
         student_number: str = payload.get("sub")
         national_code: str = payload.get("national_code")  # اضافه کردن کد ملی به payload
 
-        if student_number is None or national_code is None:
+        if student_number is None:
             raise credentials_exception
 
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(
-        User.student_number == student_number,
-        User.profile.has(national_code=national_code)  # جستجو بر اساس کد ملی
-    ).first()
+    user = db.query(User).filter(User.student_number == student_number).first()
 
     if user is None:
         raise credentials_exception

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from app.core.deps import DBDep, CurrentUser, get_db
-from app.schemas.auth import RegisterRequest, Token, RegisterResponse
+from app.schemas.auth import RegisterRequest, LoginRequest, Token, RegisterResponse
 from app.schemas.user import UserOut
 from app.services.auth_service import (
     register_user,
@@ -28,7 +28,7 @@ async def register(
         db: Session = DBDep()  # دسترسی به دیتابیس
 ):
     # ثبت‌نام کاربر با استفاده از اطلاعات شماره دانشجویی و کد ملی
-    user = await register_user(db=db, data=data)
+    user = register_user(db=db, data=data)
     return {
         "message": "ثبت‌نام با موفقیت انجام شد",
         "user_id": user.id,
@@ -43,7 +43,7 @@ async def register(
     summary="ورود و دریافت توکن"
 )
 async def login(
-        data: RegisterRequest,  # داده‌های ورود شامل شماره دانشجویی و کد ملی
+        data: LoginRequest,  # داده‌های ورود شامل شماره دانشجویی و کد ملی
         db: Session = DBDep()  # دسترسی به دیتابیس
 ):
     """ورود به سیستم و دریافت توکن JWT."""
@@ -51,8 +51,8 @@ async def login(
     # احراز هویت کاربر با استفاده از شماره دانشجویی و رمز عبور برابر با شماره دانشجویی
     user = authenticate_user(
         db,
-        student_number=data.student_number,  # بررسی شماره دانشجویی
-        password=data.student_number  # رمز عبور برابر با شماره دانشجویی است
+        student_number=data.student_number,
+        password=data.password  # رمز عبور برابر با شماره دانشجویی است
     )
 
     if not user:
@@ -87,7 +87,6 @@ async def check_student_number(student_number: str, db: Session = Depends(get_db
     """بررسی موجودیت شماره دانشجویی"""
     existing_user = db.query(User).filter(User.student_number == student_number).first()
     return {"available": existing_user is None}
-
 
 
 
