@@ -14,6 +14,8 @@ def test_auth_endpoints():
     # ۱. تست ثبت نام
     print("\n1. تست ثبت نام:")
     register_data = {
+        "first_name": "نمونه",
+        "last_name": "کاربر",
         "student_number": "4001234567",
         "national_code": "0123456789",
         "phone_number": "09123456789",

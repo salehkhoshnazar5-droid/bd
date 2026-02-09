@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -16,11 +16,14 @@ class StudentProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
 
     # اطلاعات شخصی
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
     national_code = Column(String(10), unique=True, nullable=False, index=True)
     phone_number = Column(String(11), nullable=False)
     gender = Column(String(10), nullable=False)  # brother/sister
     address = Column(String(200))
     additional_info = Column(Text, nullable=True)  # اطلاعات اضافی
+    has_authenticated = Column(Boolean, default=False, nullable=False)
 
     # timestamp‌ها
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -37,11 +40,14 @@ class StudentProfile(Base):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
             "national_code": self.national_code,
             "phone_number": self.phone_number,
             "gender": self.gender,
             "address": self.address,
             "additional_info": self.additional_info,
+            "has_authenticated": self.has_authenticated,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

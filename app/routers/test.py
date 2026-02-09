@@ -53,7 +53,18 @@ async def test_auth():
         "status": "active",
         "token_url": "/auth/login",
         "register_url": "/auth/register",
-        "docs": "/docs"
+        "docs": "/docs",
+        "login_method": "application/x-www-form-urlencoded",
+        "login_fields": ["username", "password"],
+        "register_fields": [
+        "first_name",
+        "last_name",
+        "student_number",
+        "national_code",
+        "phone_number",
+        "gender",
+        "address"
+        ]
     }
 
 

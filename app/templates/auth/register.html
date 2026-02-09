@@ -12,7 +12,48 @@
                     ثبت‌نام کاربر جدید
                 </h5>
 
-                <form method="post">
+                <style>
+                    /* تنظیم فاصله و تاکید روی پیام خطا برای ورودی‌های نام */
+                    .name-error {
+                        font-size: 0.9rem;
+                    }
+                </style>
+
+                <form id="registration-form" method="post" novalidate>
+                    <div id="registrationSuccess" class="alert alert-success d-none" role="alert">
+                        ثبت‌نام با موفقیت انجام شد
+                    </div>
+                    <div id="registrationError" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="nameValidationError" class="alert alert-danger d-none name-error" role="alert">
+                        لطفاً نام و نام خانوادگی معتبر وارد کنید.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">نام</label>
+                        <input
+                            type="text"
+                            name="first_name"
+                            class="form-control"
+                            required
+                            minlength="2"
+                            maxlength="50"
+                            value="{{ form_data.first_name if form_data }}"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">نام خانوادگی</label>
+                        <input
+                            type="text"
+                            name="last_name"
+                            class="form-control"
+                            required
+                            minlength="2"
+                            maxlength="50"
+                            value="{{ form_data.last_name if form_data }}"
+                        >
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">شماره دانشجویی</label>
                         <input type="text" name="student_number" class="form-control" required>
@@ -42,11 +83,7 @@
                         <textarea name="address" class="form-control" rows="2"></textarea>
                     </div>
 
-                    <div class="form-text">
-                        <small>
-                            رمز عبور شما همان شماره دانشجویی شما است.
-                        </small>
-                    </div>
+
 
                     <button class="btn btn-success w-100 mt-3">
                         ثبت‌نام
@@ -60,5 +97,60 @@
         </div>
     </div>
 </div>
+
+<script>
+    // اعتبارسنجی ساده برای نام و نام خانوادگی قبل از ارسال فرم
+    const form = document.getElementById("registration-form");
+    const errorBox = document.getElementById("nameValidationError");
+    const successBox = document.getElementById("registrationSuccess");
+    const serverErrorBox = document.getElementById("registrationError");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const firstName = form.querySelector("input[name='first_name']").value.trim();
+        const lastName = form.querySelector("input[name='last_name']").value.trim();
+
+        if (firstName.length < 2 || lastName.length < 2) {
+            errorBox.classList.remove("d-none");
+            return;
+        }
+
+        errorBox.classList.add("d-none");
+
+        const payload = {
+            first_name: firstName,
+            last_name: lastName,
+            student_number: form.querySelector("input[name='student_number']").value.trim(),
+            national_code: form.querySelector("input[name='national_code']").value.trim(),
+            phone_number: form.querySelector("input[name='phone_number']").value.trim(),
+            gender: form.querySelector("select[name='gender']").value,
+            address: form.querySelector("textarea[name='address']").value.trim()
+        };
+
+        try {
+            const response = await fetch("/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                serverErrorBox.textContent = data.detail || "ثبت‌نام ناموفق بود.";
+                serverErrorBox.classList.remove("d-none");
+                successBox.classList.add("d-none");
+                return;
+            }
+
+            serverErrorBox.classList.add("d-none");
+            successBox.classList.remove("d-none");
+            form.reset();
+        } catch (error) {
+            serverErrorBox.textContent = "ارتباط با سرور برقرار نشد.";
+            serverErrorBox.classList.remove("d-none");
+            successBox.classList.add("d-none");
+        }
+    });
+</script>
 {% endblock %}
 

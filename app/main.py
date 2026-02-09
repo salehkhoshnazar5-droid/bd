@@ -84,7 +84,7 @@ async def create_default_roles():
 # ایجاد برنامه FastAPI
 app = FastAPI(
     title="سامانه مدیریت بسیج دانشجویی",
-    description="سیستم جامع مدیریت فعالیت‌های بسیج دانشجویی",
+    description="سیستم احراز هویت بسیج دانشجویی",
     version="1.0.0",
     contact={
         "name": "تیم توسعه بسیج",
@@ -226,7 +226,7 @@ async def read_root():
                             </div>
                             <h1 class="display-4 mb-3 text-dark">سامانه مدیریت بسیج</h1>
                             <p class="lead mb-4 text-muted">
-                                سیستم جامع مدیریت فعالیت‌های بسیج دانشجویی
+                                سیستم احراز هویت بسیج دانشجویی
                             </p>
 
                             <div class="d-grid gap-3 d-md-flex justify-content-md-center mb-4">
@@ -279,7 +279,7 @@ async def get_api_info():
     return {
         "name": "سامانه مدیریت بسیج دانشجویی",
         "version": "1.0.0",
-        "description": "سیستم جامع مدیریت فعالیت‌های بسیج دانشجویی",
+        "description": "سیستم احراز هویت بسیج دانشجویی",
         "status": "active",
         "author": "تیم توسعه بسیج",
         "endpoints": {
@@ -299,15 +299,6 @@ async def get_api_info():
         }
     }
 
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",  # به جای app.openapi_url
-        title="سامانه مدیریت بسیج دانشجویی - Swagger UI",  # به جای app.title
-        oauth2_redirect_url=SWAGGER_OAUTH2_REDIRECT_URL,
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
-    )
 
 # سلامت سیستم
 @app.get("/health", tags=["System"])
@@ -320,17 +311,7 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@app.get(SWAGGER_OAUTH2_REDIRECT_URL, include_in_schema=False)
-async def swagger_ui_redirect():
-    return get_swagger_ui_oauth2_redirect_html()
 
-@app.get("/redoc", include_in_schema=False)
-async def redoc_html():
-    return get_redoc_html(
-        openapi_url="/openapi.json",  # به جای app.openapi_url
-        title="سامانه مدیریت بسیج دانشجویی - ReDoc",  # به جای app.title
-        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
-    )
 
 
 # شامل کردن routerها

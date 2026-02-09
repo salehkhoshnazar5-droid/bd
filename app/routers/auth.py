@@ -1,13 +1,15 @@
 # app/routers/auth.py
 from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.core.deps import DBDep, CurrentUser, get_db
-from app.schemas.auth import RegisterRequest, LoginRequest, Token, RegisterResponse
+from app.schemas.auth import RegisterRequest, Token, RegisterResponse
 from app.schemas.user import UserOut
 from app.services.auth_service import (
     register_user,
     authenticate_user,
-    create_token_for_user
+    create_token_for_user,
+    enforce_single_national_id_authentication
 )
 from app.models.user import User
 
@@ -43,7 +45,7 @@ async def register(
     summary="ورود و دریافت توکن"
 )
 async def login(
-        data: LoginRequest,  # داده‌های ورود شامل شماره دانشجویی و کد ملی
+        form_data: OAuth2PasswordRequestForm = Depends(),  # داده‌های ورود شامل شماره دانشجویی و کد ملی
         db: Session = DBDep()  # دسترسی به دیتابیس
 ):
     """ورود به سیستم و دریافت توکن JWT."""
@@ -51,8 +53,8 @@ async def login(
     # احراز هویت کاربر با استفاده از شماره دانشجویی و رمز عبور برابر با شماره دانشجویی
     user = authenticate_user(
         db,
-        student_number=data.student_number,
-        password=data.password  # رمز عبور برابر با شماره دانشجویی است
+        student_number=form_data.username,
+        password=form_data.password  # رمز عبور برابر با شماره دانشجویی است
     )
 
     if not user:
@@ -67,6 +69,7 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="حساب کاربری غیرفعال شده است"
         )
+    enforce_single_national_id_authentication(db, user)
 
     return create_token_for_user(user)
 
@@ -87,6 +90,4 @@ async def check_student_number(student_number: str, db: Session = Depends(get_db
     """بررسی موجودیت شماره دانشجویی"""
     existing_user = db.query(User).filter(User.student_number == student_number).first()
     return {"available": existing_user is None}
-
-
 

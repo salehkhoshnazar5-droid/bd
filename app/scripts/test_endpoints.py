@@ -12,11 +12,10 @@ def test_all_endpoints():
     print("=" * 60)
 
     # ۱. تست سلامت عمومی
-    print("\n1. تست سلامت عمومی:")
-    response = requests.get(f"{BASE_URL}/")
-    print(f"   GET / - Status: {response.status_code}")
-    print(f"   Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
-
+    response = requests.get(f"{BASE_URL}/api/info")
+    print(f"   GET /api/info - Status: {response.status_code}")
+    if response.ok:
+        print(f"   Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
     # ۲. تست endpoints تست
     print("\n2. تست endpoints تست:")
     endpoints = ["/test", "/test/auth", "/test/db", "/test/health"]
@@ -65,6 +64,8 @@ def test_all_endpoints():
         # ایجاد کاربر تستی
         print("\n📝 ایجاد کاربر تستی:")
         register_data = {
+            "first_name": "کاربر",
+            "last_name": "تستی",
             "student_number": "test12345",
             "national_code": "1111111111",
             "phone_number": "09111111111",

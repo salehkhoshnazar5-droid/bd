@@ -1,5 +1,6 @@
 from typing import Optional
 
+from pydantic import ValidationError
 from fastapi import (
     APIRouter,
     Request,
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import DBDep
 from app.schemas.auth import RegisterRequest, GenderEnum
-from app.services.auth_service import register_user
+from app.services.auth_service import register_user, enforce_single_national_id_authentication
 from app.core.security import create_access_token, verify_password
 from app.models.user import User
 
@@ -76,6 +77,8 @@ async def show_register_page(
 @router.post("/register", response_class=HTMLResponse)
 async def submit_register(
     request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
     student_number: str = Form(...),
     national_code: str = Form(...),
     phone_number: str = Form(...),
@@ -88,6 +91,8 @@ async def submit_register(
         gender_enum = GenderEnum(gender)
 
         register_data = RegisterRequest(
+            first_name=first_name,
+            last_name=last_name,
             student_number=student_number,
             national_code=national_code,
             phone_number=phone_number,
@@ -108,6 +113,8 @@ async def submit_register(
             status_code=status.HTTP_201_CREATED
         )
 
+    except ValidationError:
+        error_message = "اطلاعات ثبت‌نام نامعتبر است."
     except ValueError:
         # خطای enum جنسیت
         error_message = "جنسیت انتخاب‌شده معتبر نیست."
@@ -122,6 +129,8 @@ async def submit_register(
             "title": "ثبت‌نام در سامانه",
             "error_message": error_message,
             "form_data": {
+                "first_name": first_name,
+                "last_name": last_name,
                 "student_number": student_number,
                 "national_code": national_code,
                 "phone_number": phone_number,
@@ -195,6 +204,20 @@ async def submit_login(
                 "request": request,
                 "title": "ورود به سامانه",
                 "error_message": "حساب کاربری شما غیرفعال شده است.",
+                "username": username
+            },
+            status_code=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        enforce_single_national_id_authentication(db, user)
+    except HTTPException as e:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {
+                "request": request,
+                "title": "ورود به سامانه",
+                "error_message": e.detail,
                 "username": username
             },
             status_code=status.HTTP_403_FORBIDDEN

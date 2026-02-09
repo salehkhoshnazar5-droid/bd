@@ -9,11 +9,13 @@ class GenderEnum(str, Enum):
 
 # Schema برای درخواست ثبت نام
 class RegisterRequest(BaseModel):
+    first_name: str = Field(..., description="نام", min_length=2, max_length=50)
+    last_name: str = Field(..., description="نام خانوادگی", min_length=2, max_length=50)
     student_number: str
     national_code: str
     phone_number: str
     gender: GenderEnum
-    address: str
+    address: Optional[str] = None
 
 
 # Schema برای درخواست ورود

@@ -1,4 +1,7 @@
 # app/services/auth_service.py
+import logging
+
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import timedelta
@@ -28,50 +31,66 @@ def register_user(db: Session, data: RegisterRequest):
         User.student_number == data.student_number
     ).first()
 
+    existing_profile = db.query(StudentProfile).filter(
+        StudentProfile.national_code == data.national_code
+    ).first()
 
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="شماره دانشجویی قبلاً ثبت شده است"
         )
+    if existing_profile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="کد ملی قبلاً ثبت شده است"
+        )
 
-    # پیدا کردن نقش کاربر عادی
-    role = db.query(Role).filter(Role.name == "user").first()
+    try:
+        # پیدا کردن نقش کاربر عادی
+        role = db.query(Role).filter(Role.name == "user").first()
 
-    if not role:
-        # اگر نقش user وجود ندارد، آن را ایجاد کنید
-        role = Role(name="user", description="کاربر عادی")
-        db.add(role)
-        db.commit()
-        db.refresh(role)
-
-    # رمز عبور برابر با شماره دانشجویی
-    hashed_password = hash_password(data.student_number[:72])
+        if not role:
+            # اگر نقش user وجود ندارد، آن را ایجاد کنید
+            role = Role(name="user", description="کاربر عادی")
+            db.add(role)
+            db.flush()
+            # رمز عبور برابر با شماره دانشجویی
+        hashed_password = hash_password(data.student_number[:72])
 
     # ایجاد کاربر
-    user = User(
-        student_number=data.student_number,
-        hashed_password=hashed_password,
-        role_id=role.id
-    )
+        user = User(
+            student_number=data.student_number,
+            hashed_password=hashed_password,
+            role_id=role.id
+        )
 
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        db.add(user)
+        db.flush()
 
-    # ایجاد پروفایل دانشجویی
-    profile = StudentProfile(
-        user_id=user.id,
-        national_code=data.national_code,
-        phone_number=data.phone_number,
-        gender=data.gender.value if hasattr(data.gender, 'value') else data.gender,
-        address=data.address
-    )
+            # ایجاد پروفایل دانشجویی
+        profile = StudentProfile(
+            user_id=user.id,
+            national_code=data.national_code,
+            phone_number=data.phone_number,
+            gender=data.gender.value if hasattr(data.gender, 'value') else data.gender,
+            address=data.address
+        )
 
-    db.add(profile)
-    db.commit()
+        db.add(profile)
+        db.commit()
+        db.refresh(user)
+
+    except IntegrityError as exc:
+        db.rollback()
+        logging.exception("Integrity error while registering user.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="اطلاعات وارد شده تکراری یا نامعتبر است."
+        ) from exc
 
     return user
+
 
 
 def authenticate_user(db: Session, student_number: str, password: str):
@@ -96,6 +115,32 @@ def authenticate_user(db: Session, student_number: str, password: str):
         return None
 
     return user
+
+
+def enforce_single_national_id_authentication(db: Session, user: User) -> None:
+    """
+    جلوگیری از احراز هویت تکراری با کد ملی.
+
+    اگر کاربر قبلاً با کد ملی خود احراز هویت کرده باشد،
+    خطا برگردانده می‌شود. در غیر این صورت، وضعیت احراز هویت ثبت می‌شود.
+    """
+    profile = db.query(StudentProfile).filter(
+        StudentProfile.user_id == user.id
+    ).first()
+
+    if not profile:
+        return
+
+    if profile.has_authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="این کد ملی قبلاً برای احراز هویت استفاده شده است"
+        )
+
+    profile.has_authenticated = True
+    db.commit()
+
+
 def create_token_for_user(user: User):
     """ ایجاد توکن JWT برای کاربر. Args: user: شیء کاربر Returns: dict: توکن دسترسی """
     access_token_expires =\
@@ -112,11 +157,3 @@ def create_token_for_user(user: User):
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
     }
-
-
-
-
-
-
-
-
