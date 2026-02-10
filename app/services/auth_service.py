@@ -16,7 +16,7 @@ from app.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     MAX_BCRYPT_PASSWORD_BYTES,
 )
-
+from app.core.validators import normalize_digits
 
 def register_user(db: Session, data: RegisterRequest):
     """
@@ -27,9 +27,9 @@ def register_user(db: Session, data: RegisterRequest):
         data: اطلاعات ثبت نام (RegisterRequest)
     """
 
-    student_number = data.student_number.strip()
-    national_code = data.national_code.strip()
-    phone_number = data.phone_number.strip()
+    student_number = normalize_digits(data.student_number)
+    national_code = normalize_digits(data.national_code)
+    phone_number = normalize_digits(data.phone_number)
 
     if len(student_number.encode("utf-8")) > MAX_BCRYPT_PASSWORD_BYTES:
         raise HTTPException(
@@ -42,8 +42,8 @@ def register_user(db: Session, data: RegisterRequest):
         User.student_number == student_number).first()
 
     existing_profile = db.query(StudentProfile).filter(
-        (StudentProfile.national_code == data.national_code)
-        | (StudentProfile.student_number == data.student_number)
+        (StudentProfile.national_code == national_code)
+        | (StudentProfile.student_number == student_number)
     ).first()
 
     if existing_user:
@@ -67,7 +67,7 @@ def register_user(db: Session, data: RegisterRequest):
             db.add(role)
             db.flush()
 
-        password = data.student_number[:72]
+        password = student_number[:72]
         hashed_password = hash_password(password)
 
 
@@ -160,15 +160,15 @@ def enforce_single_national_id_authentication(db: Session, user: User) -> None:
 def create_token_for_user(user: User):
     """ ایجاد توکن JWT برای کاربر. Args: user: شیء کاربر Returns: dict: توکن دسترسی """
     national_code = user.profile.national_code if getattr(user, "profile", None) else None
-    access_token_expires =\
-        timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token( data={
-        "sub": user.student_number,
-        "user_id": user.id,
-        "national_code": national_code,
-        "role": user.role.name if user.role else
-        "user" },
-                                        expires_delta=access_token_expires
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={
+            "sub": user.student_number,
+            "user_id": user.id,
+            "national_code": national_code,
+            "role": user.role.name if user.role else "user",
+        },
+        expires_delta=access_token_expires,
     )
     return {
         "access_token": access_token,

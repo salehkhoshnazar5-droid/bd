@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional
+from app.core.validators import validate_phone_number
 
 class UserOut(BaseModel):
     id: int
@@ -8,20 +9,24 @@ class UserOut(BaseModel):
     is_active: bool
     profile: Optional[dict] = None
 
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 # Schema برای بروزرسانی پروفایل کاربر
 class ProfileUpdate(BaseModel):
-    phone_number: Optional[str] = Field(None, pattern=r"^\d{11}$")
+    phone_number: Optional[str] = Field(None, regex=r"^09\d{9}$")
     address: Optional[str] = Field(None, max_length=200)
-    gender: Optional[str] = Field(None, pattern="^(brother|sister)$")
+    gender: Optional[str] = Field(None, regex="^(brother|sister)$")
 
-    model_config = {
-        "json_schema_extra": {
+    @validator("phone_number", pre=True)
+    def validate_phone_number_field(cls, value: Optional[str]) -> Optional[str]:
+        return validate_phone_number(value)
+
+    class Config:
+        schema_extra = {
             "example": {
                 "phone_number": "09123456789",
                 "address": "کرمان، بلوار هوانیوز",
                 "gender": "brother"
             }
         }
-    }

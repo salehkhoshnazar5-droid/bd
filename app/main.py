@@ -12,14 +12,14 @@ from app.routers import student, admin, test, user, admin_ui, admin_dashboard
 from app.core.database import create_database
 from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
-from app.services.auth_service import create_token_for_user
+from app.core.confing import settings
 
 
 
 # تنظیمات لاگ‌گیری
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=settings.log_level.upper(),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 SWAGGER_OPENAPI_URL = "/openapi.json"
@@ -51,8 +51,8 @@ async def create_default_roles():
     from app.core.database import SessionLocal
     from app.models.role import Role
 
+    db = SessionLocal()
     try:
-        db = SessionLocal()
 
         default_roles = [
             {"name": "user", "description": "کاربر عادی سیستم"},
@@ -75,12 +75,14 @@ async def create_default_roles():
                 logger.info(f"ℹ️ Role already exists: {role_name}")
 
         db.commit()
-        db.close()
+
 
     except Exception as e:
+        db.rollback()
         logger.error(f"❌ Error creating default roles: {e}")
         # برنامه را متوقف نکن، فقط خطا را لاگ کن
-
+    finally:
+        db.close()
 # ایجاد برنامه FastAPI
 app = FastAPI(
     title="سامانه مدیریت بسیج دانشجویی",
@@ -107,12 +109,18 @@ app = FastAPI(
 )
 
 # تنظیمات CORS
+cors_allow_origins = list(settings.cors_allow_origins)
+cors_allow_credentials = settings.cors_allow_credentials
+if "*" in cors_allow_origins and cors_allow_credentials:
+    logger.warning("CORS with wildcard origins cannot use credentials. Disabling credentials.")
+    cors_allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # در production محدود کنید
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_allow_origins,
+    allow_credentials=cors_allow_credentials,
+    allow_methods=list(settings.cors_allow_methods),
+    allow_headers=list(settings.cors_allow_headers),
 )
 
 # Middleware برای لاگ‌گیری درخواست‌ها

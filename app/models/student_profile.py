@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.user import User
+     from app.models.user import User
 
 
 class StudentProfile(Base):

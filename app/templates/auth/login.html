@@ -27,6 +27,7 @@
         {% endif %}
 
         <form method="post" action="/ui-auth/login">
+          <input type="hidden" name="redirect_url" value="{{ redirect_url if redirect_url }}">
           <div class="mb-3">
             <label class="form-label">کد ملی</label>
             <input type="text" name="national_code" class="form-control" value="{{ national_code if national_code }}" pattern="\\d{10}" inputmode="numeric" required>
@@ -38,6 +39,11 @@
             <div class="form-text">
               رمز عبور شما همان شماره دانشجویی است.
             </div>
+          </div>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
+            <label class="form-check-label" for="remember_me">مرا به خاطر بسپار</label>
           </div>
 
           <button class="btn btn-primary w-100 mt-3">

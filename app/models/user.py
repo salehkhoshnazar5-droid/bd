@@ -6,8 +6,11 @@ from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.student_profile import StudentProfile
     from app.models.audit_log import AuditLog
+
+if TYPE_CHECKING:
+    from app.models.student_profile import StudentProfile
+
 
 class User(Base):
     __tablename__ = "users"
@@ -97,10 +100,19 @@ class User(Base):
         """بررسی تکراری بودن شماره دانشجویی یا کد ملی"""
         from app.models.student_profile import StudentProfile  # وارد کردن StudentProfile در اینجا برای جلوگیری از Circular Import
 
-        conflict = db.query(User).filter(
-            (User.student_number == student_number) | 
-            (StudentProfile.national_code == national_code)
-        ).first()
+        user_query = db.query(User).filter(User.student_number == student_number)
+        if exclude_user_id is not None:
+            user_query = user_query.filter(User.id != exclude_user_id)
+        if user_query.first():
+            raise HTTPException(
+                status_code=400,
+                detail="شماره دانشجویی تکراری است",
+            )
+
+        conflict_query = db.query(StudentProfile).filter(StudentProfile.national_code == national_code)
+        if exclude_user_id is not None:
+            conflict_query = conflict_query.filter(StudentProfile.user_id != exclude_user_id)
+        conflict = conflict_query.first()
 
         if conflict:
             raise HTTPException(

@@ -19,7 +19,7 @@ def get_my_profile(db: Session, current_user: User) -> StudentProfileOut:
     if not profile:
         raise HTTPException(status_code=404, detail="پروفایل یافت نشد")
 
-    return StudentProfileOut.model_validate(profile)
+    return StudentProfileOut.from_orm(profile)
 
 
 def update_my_profile(
@@ -39,10 +39,10 @@ def update_my_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="پروفایل یافت نشد")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
 
     db.commit()
     db.refresh(profile)
 
-    return StudentProfileOut.model_validate(profile)
+    return StudentProfileOut.from_orm(profile)

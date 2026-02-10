@@ -65,7 +65,7 @@ def update_my_profile(
     )
 
     # به‌روزرسانی اطلاعات پروفایل
-    for field, value in data.model_dump().items():
+    for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
 
     db.commit()
@@ -115,7 +115,7 @@ def admin_update_student(
     )
 
     # به‌روزرسانی اطلاعات پروفایل توسط ادمین
-    for field, value in data.model_dump().items():
+    for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
 
     db.commit()

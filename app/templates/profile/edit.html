@@ -1,13 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
 
-</body>
-</html>
 {% extends "base.html" %}
 
 {% block title %}ویرایش پروفایل{% endblock %}
@@ -21,8 +12,8 @@
                 <div class="mb-3">
                     <label for="phone_number" class="form-label">شماره تلفن</label>
                     <input type="text" class="form-control" id="phone_number" name="phone_number"
-                           value="{{ profile.phone_number if profile else '' }}" pattern="^\d{11}$" required>
-                    <div class="form-text">شماره تلفن باید 11 رقم باشد.</div>
+                           value="{{ profile.phone_number if profile else '' }}" pattern="^09\\d{9}$" required>
+                    <div class="form-text">شماره تلفن باید با ۰۹ شروع شده و ۱۱ رقم باشد.</div>
                 </div>
                 <div class="mb-3">
                     <label for="address" class="form-label">آدرس</label>

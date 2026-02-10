@@ -8,15 +8,21 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.deps import DBDep
 from app.models.user import User
+from app.core.confing import settings
 
 # تنظیمات
-SECRET_KEY = "CHANGE_THIS_SECRET_KEY"  # در production تغییر دهید
+SECRET_KEY = settings.secret_key  # در production تغییر دهید
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 MAX_BCRYPT_PASSWORD_BYTES = 72
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+if SECRET_KEY == "CHANGE_THIS_SECRET_KEY":
+    logging.getLogger(__name__).warning(
+        "SECRET_KEY is using the default value; set SECRET_KEY in production."
+    )
 
 # Exception
 credentials_exception = HTTPException(
@@ -105,7 +111,7 @@ def get_current_admin(
     """
     Dependency برای اطمینان از admin بودن کاربر
     """
-    if current_user.role.name != "admin":
+    if  not current_user.role or current_user.role.name != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="شما دسترسی لازم را ندارید"

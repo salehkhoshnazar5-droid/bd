@@ -12,6 +12,7 @@ from app.services.auth_service import (
     enforce_single_national_id_authentication
 )
 from app.models.user import User
+from app.core.validators import normalize_digits
 
 router = APIRouter(
     prefix="/auth",
@@ -58,12 +59,14 @@ async def login(
         db: Session = DBDep()  # دسترسی به دیتابیس
 ):
     """ورود به سیستم و دریافت توکن JWT."""
-    if not form_data.username.isdigit() or len(form_data.username) != 10:
+    national_code = normalize_digits(form_data.username)
+    student_number = normalize_digits(form_data.password)
+    if not national_code.isdigit() or len(national_code) != 10:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="کد ملی باید شامل ۱۰ رقم باشد."
         )
-    if not form_data.password.isdigit() or len(form_data.password) != 9:
+    if not student_number.isdigit() or len(student_number) != 9:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="شماره دانشجویی باید شامل ۹ رقم باشد."
@@ -71,8 +74,9 @@ async def login(
     # احراز هویت کاربر با استفاده از شماره دانشجویی و رمز عبور برابر با شماره دانشجویی
     user = authenticate_user(
         db,
-        national_code=form_data.username,
-        password=form_data.password  # رمز عبور برابر با شماره دانشجویی است
+        national_code=national_code,
+        password=student_number
+        # رمز عبور برابر با شماره دانشجویی است
     )
 
     if not user:

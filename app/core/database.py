@@ -1,15 +1,16 @@
 # app/core/database.py
+import logging
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-
+from app.core.confing import settings
 # تنظیمات دیتابیس
-DATABASE_URL = "sqlite:///./basij.db"  # تغییر نام فایل برای مشخص‌تر بودن
+DATABASE_URL = settings.database_url # تغییر نام فایل برای مشخص‌تر بودن
 
 # ایجاد engine
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},  # برای SQLite ضروری است
-    echo=True  # اضافه کردن echo برای دیباگ - در production غیرفعال کنید
+    echo=settings.sql_echo,  # اضافه کردن echo برای دیباگ - در production غیرفعال کنید
 )
 
 # ایجاد session factory
@@ -56,7 +57,7 @@ def create_database():
     """ایجاد همه جداول در دیتابیس"""
     Base.metadata.create_all(bind=engine)
     ensure_student_profiles_schema()
-    print(f"✅ دیتابیس در {DATABASE_URL} ایجاد شد")
+    logging.getLogger(__name__).info("✅ دیتابیس در %s ایجاد شد", DATABASE_URL)
 
 
 # تابع کمکی برای دیدن جداول ایجاد شده

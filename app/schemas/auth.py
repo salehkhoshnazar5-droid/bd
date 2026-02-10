@@ -1,6 +1,11 @@
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, validator
 from enum import Enum
+from app.core.validators import (
+    validate_national_code,
+    validate_phone_number,
+    validate_student_number,
+)
 
 # Enum برای جنسیت
 class GenderEnum(str, Enum):
@@ -17,26 +22,20 @@ class RegisterRequest(BaseModel):
     gender: GenderEnum
     address: Optional[str] = None
 
-    @field_validator("student_number")
-    def validate_student_number(cls, value: str) -> str:
-        if not value.isdigit() or len(value) != 9:
-            raise ValueError("شماره دانشجویی باید ۹ رقم باشد")
-        return value
+    @validator("student_number", pre=True)
+    def validate_student_number_field(cls, value: str) -> str:
+        return validate_student_number(value)
 
-    @field_validator("national_code")
-    def validate_national_code(cls, value: str) -> str:
-        if not value.isdigit() or len(value) != 10:
-            raise ValueError("کد ملی باید ۱۰ رقم باشد")
-        return value
+    @validator("national_code", pre=True)
+    def validate_national_code_field(cls, value: str) -> str:
+        return validate_national_code(value)
 
-    @field_validator("phone_number")
-    def validate_phone_number(cls, value: str) -> str:
-        if not value.isdigit() or len(value) != 11:
-            raise ValueError("شماره تماس باید ۱۱ رقم باشد")
-        return value
+    @validator("phone_number", pre=True)
+    def validate_phone_number_field(cls, value: str) -> str:
+        return validate_phone_number(value)
 
     class Config:
-        json_schema_extra = {
+        schema_extra = {
             "example": {
                 "first_name": "زهرا",
                 "last_name": "محمدی",
@@ -54,20 +53,16 @@ class LoginRequest(BaseModel):
     national_code: str = Field(..., description="کد ملی ۱۰ رقمی")
     student_number: str = Field(..., description="شماره دانشجویی ۹ رقمی")
 
-    @field_validator("national_code")
+    @validator("national_code", pre=True)
     def validate_login_national_code(cls, value: str) -> str:
-        if not value.isdigit() or len(value) != 10:
-            raise ValueError("کد ملی باید ۱۰ رقم باشد")
-        return value
+        return validate_national_code(value)
 
-    @field_validator("student_number")
+    @validator("student_number", pre=True)
     def validate_login_student_number(cls, value: str) -> str:
-        if not value.isdigit() or len(value) != 9:
-            raise ValueError("شماره دانشجویی باید ۹ رقم باشد")
-        return value
+        return validate_student_number(value)
 
     class Config:
-        json_schema_extra = {
+        schema_extra = {
             "example": {
                 "national_code": "3200261196",
                 "student_number": "404370044"
@@ -81,7 +76,7 @@ class Token(BaseModel):
     expires_in: Optional[int] = Field(default=3600, description="زمان انقضا به ثانیه")
 
     class Config:
-        json_schema_extra = {
+        schema_extra = {
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
@@ -97,7 +92,7 @@ class RegisterResponse(BaseModel):
     role: str = Field(..., description="نقش کاربر")
 
     class Config:
-        json_schema_extra = {
+        schema_extra = {
             "example": {
                 "message": "ثبت‌نام با موفقیت انجام شد",
                 "user_id": 1,
