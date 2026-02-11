@@ -18,6 +18,8 @@ from app.core.security import (
 )
 from app.core.validators import normalize_digits
 
+logger = logging.getLogger(__name__)
+
 def register_user(db: Session, data: RegisterRequest):
     """
     ثبت کاربر جدید در سیستم.
@@ -30,6 +32,13 @@ def register_user(db: Session, data: RegisterRequest):
     student_number = normalize_digits(data.student_number)
     national_code = normalize_digits(data.national_code)
     phone_number = normalize_digits(data.phone_number)
+
+    logger.info(
+        "Register attempt: national_code=%s student_number=%s phone_number=%s",
+        national_code,
+        student_number,
+        phone_number,
+    )
 
     if len(student_number.encode("utf-8")) > MAX_BCRYPT_PASSWORD_BYTES:
         raise HTTPException(
@@ -107,6 +116,12 @@ def register_user(db: Session, data: RegisterRequest):
         db.add(profile)
         db.commit()
         db.refresh(user)
+        logger.info(
+            "Register success: user_id=%s national_code=%s student_number=%s",
+            user.id,
+            national_code,
+            student_number,
+        )
 
     except IntegrityError as exc:
         db.rollback()
@@ -136,20 +151,47 @@ def register_user(db: Session, data: RegisterRequest):
 
 
 def authenticate_user(db: Session, national_code: str, password: str):
+    """
+    احراز هویت کاربر با کد ملی و شماره دانشجویی (به‌عنوان رمز عبور).
 
-    user = (
+    به‌جای first() روی نتیجهٔ join، همهٔ ردیف‌های منطبق با کد ملی بررسی می‌شوند
+    تا اگر داده‌های قدیمی/ناسازگار باعث تکرار کد ملی شده باشند، کاربر معتبر از دست نرود.
+    """
+    normalized_national_code = normalize_digits(national_code)
+    normalized_password = normalize_digits(password)
+
+    candidates = (
         db.query(User)
         .join(StudentProfile, StudentProfile.user_id == User.id)
-        .filter(StudentProfile.national_code == national_code)
-        .first()
+        .filter(
+            StudentProfile.national_code == normalized_national_code,
+            User.student_number == normalized_password,
+        )
+        .all()
     )
 
     # بررسی وجود کاربر و صحت رمز عبور (که در اینجا باید برابر با شماره دانشجویی باشد)
-    if not user or not verify_password(password, user.hashed_password):
-        return None
+    logger.info(
+        "Login attempt: national_code=%s student_number=%s matched_users=%s",
+        normalized_national_code,
+        normalized_password,
+        len(candidates),
+    )
 
-    return user
+    for candidate in candidates:
+        if verify_password(normalized_password, candidate.hashed_password):
+            logger.info(
+                "Login success: user_id=%s national_code=%s",
+                candidate.id,
+                normalized_national_code,
+            )
+            return candidate
 
+    logger.warning(
+        "Login failed: national_code=%s reason=invalid_password_or_not_found",
+        normalized_national_code,
+    )
+    return None
 
 def enforce_single_national_id_authentication(db: Session, user: User) -> None:
     """

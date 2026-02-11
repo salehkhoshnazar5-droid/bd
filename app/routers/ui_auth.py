@@ -17,10 +17,8 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import DBDep
 from app.schemas.auth import RegisterRequest, GenderEnum
-from app.services.auth_service import register_user, enforce_single_national_id_authentication
-from app.core.security import create_access_token, verify_password
-from app.models.user import User
-from app.models.student_profile import StudentProfile
+from app.services.auth_service import register_user, authenticate_user, enforce_single_national_id_authentication
+from app.core.security import create_access_token
 from app.core.confing import settings
 from app.core.validators import validate_national_code, validate_student_number
 # ----------------------------
@@ -201,14 +199,13 @@ async def submit_login(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
 
-    user = (
-        db.query(User)
-        .join(StudentProfile, StudentProfile.user_id == User.id)
-        .filter(StudentProfile.national_code == normalized_national_code)
-        .first()
+    user = authenticate_user(
+        db,
+        national_code=normalized_national_code,
+        password=normalized_password,
     )
 
-    if not user or not verify_password(normalized_password, user.hashed_password):
+    if not user:
         return templates.TemplateResponse(
             "auth/login.html",
             {
