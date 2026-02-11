@@ -24,7 +24,7 @@
                 </tr>
                 <tr>
                     <th>جنسیت:</th>
-                    <td>{{ profile.gender if profile else 'ثبت نشده' }}</td>
+                    <td>{% if not profile or not profile.gender %}ثبت نشده{% elif profile.gender == 'brother' %}برادر{% elif profile.gender == 'sister' %}خواهر{% else %}{{ profile.gender }}{% endif %}</td>
                 </tr>
                 <tr>
                     <th>آدرس:</th>

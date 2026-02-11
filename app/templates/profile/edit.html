@@ -18,8 +18,8 @@
                 <div class="mb-3">
                     <label for="phone_number" class="form-label">شماره تلفن</label>
                     <input type="text" class="form-control" id="phone_number" name="phone_number"
-                           value="{{ profile.phone_number if profile else '' }}" pattern="^09\\d{9}$" required>
-                    <div class="form-text">شماره تلفن باید با ۰۹ شروع شده و ۱۱ رقم باشد.</div>
+                           value="{{ profile.phone_number if profile else '' }}"
+                           pattern="[0-9]{11}" minlength="11" maxlength="11" required>
                 </div>
                 <div class="mb-3">
                     <label for="address" class="form-label">آدرس</label>
