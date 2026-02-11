@@ -8,7 +8,13 @@
     <h1>ویرایش پروفایل</h1>
     <div class="card">
         <div class="card-body">
-            <form method="post" action="/api/users/me">
+        {% if success_message %}
+            <div class="alert alert-success">{{ success_message }}</div>
+            {% endif %}
+            {% if error_message %}
+            <div class="alert alert-danger">{{ error_message }}</div>
+            {% endif %}
+            <form method="post" action="/ui/dashboard/profile/edit">
                 <div class="mb-3">
                     <label for="phone_number" class="form-label">شماره تلفن</label>
                     <input type="text" class="form-control" id="phone_number" name="phone_number"

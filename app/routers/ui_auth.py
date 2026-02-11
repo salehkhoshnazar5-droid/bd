@@ -168,7 +168,7 @@ async def show_login_page(
             "success_message": success_message,
             "error_message": error_message,
             "redirect_url": request.query_params.get(
-                "redirect", "/ui-auth/dashboard"
+                "redirect", "/ui/dashboard"
             )
         }
     )
@@ -183,7 +183,7 @@ async def submit_login(
     national_code: str = Form(...),  # کد ملی
     password: str = Form(...),  # شماره دانشجویی
     remember_me: Optional[str] = Form(None),
-    redirect_url: Optional[str] = Form("/ui-auth/dashboard"),
+    redirect_url: Optional[str] = Form("/ui/dashboard"),
     db: Session = DBDep()
 ):
     try:
@@ -294,53 +294,9 @@ async def logout_user():
 # Dashboard
 # ----------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
-async def user_dashboard(
-    request: Request,
-    db: Session = DBDep()
-):
-    token = request.cookies.get("access_token")
-
-    if not token:
-        return RedirectResponse(
-            url="/ui-auth/login?redirect=/ui-auth/dashboard",
-            status_code=status.HTTP_303_SEE_OTHER
-        )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except JWTError:
-        response = RedirectResponse(
-            url="/ui-auth/login?redirect=/ui-auth/dashboard",
-            status_code=status.HTTP_303_SEE_OTHER
-        )
-        response.delete_cookie("access_token")
-        return response
-
-    if not user_id:
-        response = RedirectResponse(
-            url="/ui-auth/login?redirect=/ui-auth/dashboard",
-            status_code=status.HTTP_303_SEE_OTHER
-        )
-        response.delete_cookie("access_token")
-        return response
-
-    user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
-    if not user:
-        response = RedirectResponse(
-            url="/ui-auth/login?redirect=/ui-auth/dashboard",
-            status_code=status.HTTP_303_SEE_OTHER
-        )
-        response.delete_cookie("access_token")
-        return response
-
-
-    return templates.TemplateResponse(
-        "dashboard/main.html",
-        {
-            "request": request,
-            "title": "داشبورد کاربری",
-            "message": "به داشبورد خوش آمدید",
-            "user": user,
-            "profile": user.profile,
-        }
+async def user_dashboard(request: Request):
+    """Backward-compatible redirect to the canonical UI dashboard route."""
+    return RedirectResponse(
+        url="/ui/dashboard",
+        status_code=status.HTTP_303_SEE_OTHER
     )
