@@ -22,7 +22,7 @@ from app.core.security import create_access_token, verify_password
 from app.models.user import User
 from app.models.student_profile import StudentProfile
 from app.core.confing import settings
-from app.core.validators import normalize_digits
+from app.core.validators import validate_national_code, validate_student_number
 # ----------------------------
 # Router & Templates
 # ----------------------------
@@ -185,27 +185,16 @@ async def submit_login(
     redirect_url: Optional[str] = Form("/ui-auth/dashboard"),
     db: Session = DBDep()
 ):
-    normalized_national_code = normalize_digits(national_code)
-    normalized_password = normalize_digits(password)
-    if not normalized_national_code.isdigit() or len(normalized_national_code) != 10:
+    try:
+        normalized_national_code = validate_national_code(national_code)
+        normalized_password = validate_student_number(password)
+    except ValueError as exc:
         return templates.TemplateResponse(
             "auth/login.html",
             {
                 "request": request,
                 "title": "ورود به سامانه",
-                "error_message": "کد ملی باید شامل ۱۰ رقم باشد.",
-                "national_code": national_code,
-                "redirect_url": redirect_url,
-            },
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-        )
-    if not normalized_password.isdigit() or len(normalized_password) != 9:
-        return templates.TemplateResponse(
-            "auth/login.html",
-            {
-                "request": request,
-                "title": "ورود به سامانه",
-                "error_message": "شماره دانشجویی باید  شامل ۹ رقم باشد.",
+                "error_message": str(exc),
                 "national_code": national_code,
                 "redirect_url": redirect_url,
             },

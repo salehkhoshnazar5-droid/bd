@@ -43,7 +43,9 @@ def ensure_student_profiles_schema():
     if "has_authenticated" not in existing_columns:
         pending_columns.append(("has_authenticated", "BOOLEAN NOT NULL DEFAULT 0"))
 
-    if not pending_columns:
+    existing_indexes = {index["name"] for index in inspector.get_indexes("student_profiles")}
+
+    if not pending_columns and "ix_student_profiles_phone_number" in existing_indexes:
         return
 
     with engine.begin() as connection:
@@ -51,6 +53,10 @@ def ensure_student_profiles_schema():
             connection.execute(
                 text(f"ALTER TABLE student_profiles ADD COLUMN {column_name} {column_ddl}")
             )
+        if "ix_student_profiles_phone_number" not in existing_indexes:
+            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_student_profiles_phone_number ON student_profiles (phone_number)"))
+
+
 
 
 def create_database():

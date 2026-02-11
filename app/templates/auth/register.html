@@ -87,7 +87,7 @@
                             name="phone_number"
                             class="form-control"
                             required
-                            pattern="09\\d{9}"
+                            pattern="\\d{11}"
                             inputmode="numeric"
                             value="{{ form_data.phone_number if form_data }}"
                         >
@@ -158,13 +158,13 @@
         }
 
         if (!/^\d{10}$/.test(nationalCode)) {
-            formatErrorBox.textContent = "کد ملی باید ۱۰ رقم باشد.";
+            formatErrorBox.textContent = "کد ملی معتبر نیست";
             formatErrorBox.classList.remove("d-none");
             return;
         }
 
-        if (!/^09\d{9}$/.test(phoneNumber)) {
-            formatErrorBox.textContent = "شماره تماس باید با ۰۹ شروع شده و ۱۱ رقم باشد.";
+        if (!/^\d{11}$/.test(phoneNumber)) {
+            formatErrorBox.textContent = "شماره تماس باید ۱۱ رقم باشد.";
             formatErrorBox.classList.remove("d-none");
             return;
         }

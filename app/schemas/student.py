@@ -4,7 +4,7 @@ from enum import Enum
 from app.core.validators import (
     validate_national_code,
     validate_phone_number,
-    validate_student_number,
+    validate_student_number, validate_gender,
 )
 
 # Enum برای جنسیت
@@ -18,9 +18,9 @@ class GenderEnum(str, Enum):
 class StudentProfileBase(BaseModel):
     first_name: str = Field(..., min_length=2, max_length=50)
     last_name: str = Field(..., min_length=2, max_length=50)
-    national_code: str = Field(..., regex=r"^\d{10}$")
-    student_number: str = Field(..., regex=r"^\d{9}$")
-    phone_number: str = Field(..., regex=r"^09\d{9}$")
+    national_code: str = Field(...)
+    student_number: str = Field(...)
+    phone_number: str = Field(...)
     gender: GenderEnum
     address: Optional[str] = Field(None, max_length=100)
 
@@ -42,8 +42,8 @@ class StudentProfileBase(BaseModel):
 
 # کلاس برای بروزرسانی پروفایل توسط دانشجو
 class StudentProfileUpdate(BaseModel):
-    national_code: Optional[str] = Field(None, regex=r"^\d{10}$")
-    phone_number: Optional[str] = Field(None, regex=r"^09\d{9}$")
+    national_code: Optional[str] = Field(None)
+    phone_number: Optional[str] = Field(None)
     gender: Optional[str] = None
     address: Optional[str] = Field(None, max_length=100)
 
@@ -56,14 +56,9 @@ class StudentProfileUpdate(BaseModel):
         return validate_phone_number(value)
 
     @validator("gender")
-    def validate_gender(cls, v):
-        if v in ["خواهر", "sister"]:
-            return "sister"
-        elif v in ["برادر", "brother"]:
-            return "brother"
-        elif v is not None:
-            raise ValueError("gender must be 'sister' or 'brother'")
-        return v
+    def validate_gender_field(cls, value: Optional[str]) -> Optional[str]:
+        return validate_gender(value)
+
 
     class Config:
         orm_mode = True

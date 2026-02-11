@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional
-from app.core.validators import validate_phone_number
+from app.core.validators import validate_phone_number, validate_gender
+
 
 class UserOut(BaseModel):
     id: int
@@ -14,13 +15,17 @@ class UserOut(BaseModel):
 
 # Schema برای بروزرسانی پروفایل کاربر
 class ProfileUpdate(BaseModel):
-    phone_number: Optional[str] = Field(None, regex=r"^09\d{9}$")
+    phone_number: Optional[str] = Field(None)
     address: Optional[str] = Field(None, max_length=200)
-    gender: Optional[str] = Field(None, regex="^(brother|sister)$")
+    gender: Optional[str] = Field(None)
 
     @validator("phone_number", pre=True)
     def validate_phone_number_field(cls, value: Optional[str]) -> Optional[str]:
         return validate_phone_number(value)
+
+    @validator("gender")
+    def validate_gender_field(cls, value: Optional[str]) -> Optional[str]:
+        return validate_gender(value)
 
     class Config:
         schema_extra = {

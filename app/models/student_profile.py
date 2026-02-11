@@ -20,7 +20,7 @@ class StudentProfile(Base):
     last_name = Column(String(50), nullable=False)
     national_code = Column(String(10), unique=True, nullable=False, index=True)
     student_number = Column(String(20), unique=True, nullable=False, index=True)
-    phone_number = Column(String(11), nullable=False)
+    phone_number = Column(String(11), unique=True, nullable=False, index=True)
     gender = Column(String(10), nullable=False)  # brother/sister
     address = Column(String(200))
     additional_info = Column(Text, nullable=True)  # اطلاعات اضافی

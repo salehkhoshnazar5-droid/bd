@@ -41,20 +41,30 @@ def register_user(db: Session, data: RegisterRequest):
     existing_user = db.query(User).filter(
         User.student_number == student_number).first()
 
-    existing_profile = db.query(StudentProfile).filter(
-        (StudentProfile.national_code == national_code)
-        | (StudentProfile.student_number == student_number)
+    existing_national_code = db.query(StudentProfile).filter(
+        StudentProfile.national_code == national_code
+    ).first()
+    existing_profile_student_number = db.query(StudentProfile).filter(
+        StudentProfile.student_number == student_number
+    ).first()
+    existing_phone_number = db.query(StudentProfile).filter(
+        StudentProfile.phone_number == phone_number
     ).first()
 
-    if existing_user:
+    if existing_user or existing_profile_student_number:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="شماره دانشجویی قبلاً ثبت شده است"
+            detail="این شماره دانشجویی قبلاً ثبت شده است"
         )
-    if existing_profile:
+    if existing_national_code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="کد ملی یا شماره دانشجویی قبلاً ثبت شده است"
+            detail="کد ملی قبلاً ثبت شده است"
+        )
+    if existing_phone_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="این شماره تلفن قبلاً ثبت شده است"
         )
 
     try:

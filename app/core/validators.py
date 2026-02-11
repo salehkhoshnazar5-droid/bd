@@ -1,5 +1,6 @@
 import re
-from typing import Optional
+import unicodedata
+from typing import Any, Optional
 
 
 _PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
@@ -10,40 +11,92 @@ _DIGIT_TRANSLATION = str.maketrans(
 )
 
 
-def normalize_digits(value: Optional[str]) -> Optional[str]:
+def _coerce_to_text(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+def _normalize_and_require_pattern(
+    value: Optional[str],
+    pattern: str,
+    error_message: str,
+) -> Optional[str]:
     if value is None:
         return value
-    return re.sub(r"\s+", "", value.strip().translate(_DIGIT_TRANSLATION))
+    normalized_value = normalize_digits(value)
+    if not re.fullmatch(pattern, normalized_value):
+        raise ValueError(error_message)
+    return normalized_value
 
+def normalize_digits(value: Any) -> Optional[str]:
+        """
+        نرمال‌سازی ورودی‌های عددی.
 
-def validate_student_number(value: Optional[str]) -> Optional[str]:
+        - تبدیل ارقام فارسی/عربی به انگلیسی
+        - حذف فاصله‌ها و کاراکترهای قالب‌بندی متداول
+        - پشتیبانی از ورودی‌های غیررشته‌ای (مثل int)
+        """
+        text_value = _coerce_to_text(value)
+        if text_value is None:
+            return None
+
+        normalized = unicodedata.normalize("NFKC", text_value).translate(_DIGIT_TRANSLATION).strip()
+        # حذف انواع فاصله‌ها و علائم قالب‌بندی رایج
+        normalized = re.sub(r"[\s\u200c\u200f\-_()]+", "", normalized)
+        return normalized
+
+def _normalize_fixed_digits(value: Any, *, length: int, field_name: str) -> str:
+        normalized = normalize_digits(value)
+        if normalized is None or normalized == "":
+            raise ValueError(f"{field_name} الزامی است")
+
+        if normalized.isdigit() and len(normalized) < length:
+            normalized = normalized.zfill(length)
+
+        if not re.fullmatch(rf"\d{{{length}}}", normalized):
+            raise ValueError(f"{field_name} باید {length} رقم باشد")
+
+        return normalized
+
+def validate_student_number(value: Any) -> Optional[str]:
+    if value is None:
+        return value
+    return _normalize_fixed_digits(value, length=9, field_name="شماره دانشجویی")
+
+def validate_phone_number(value: Any) -> Optional[str]:
     if value is None:
         return value
     value = normalize_digits(value)
-    if not re.fullmatch(r"\d{9}", value):
-        raise ValueError("شماره دانشجویی باید ۹ رقم باشد")
-    return value
 
+    if not re.fullmatch(r"\d{11}", value):
+        raise ValueError("شماره تماس باید ۱۱ رقم باشد")
 
-def validate_phone_number(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return value
-    value = normalize_digits(value)
     if not re.fullmatch(r"09\d{9}", value):
         raise ValueError("شماره تماس باید با ۰۹ شروع شده و ۱۱ رقم باشد")
     return value
 
 
-def validate_national_code(value: Optional[str]) -> Optional[str]:
+def validate_national_code(value: Any) -> Optional[str]:
     if value is None:
         return value
     value = normalize_digits(value)
     if not re.fullmatch(r"\d{10}", value):
-        raise ValueError("کد ملی باید ۱۰ رقم باشد")
-    if len(set(value)) == 1:
-        raise ValueError("کد ملی معتبر نیست")
-    checksum = sum(int(value[i]) * (10 - i) for i in range(9)) % 11
-    check_digit = int(value[9])
-    if (checksum < 2 and check_digit != checksum) or (checksum >= 2 and check_digit + checksum != 11):
         raise ValueError("کد ملی معتبر نیست")
     return value
+
+def validate_gender(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return value
+    normalized_value = value.strip().lower()
+    allowed_values = {
+        "خواهر": "sister",
+        "sister": "sister",
+        "برادر": "brother",
+        "brother": "brother",
+    }
+    normalized_gender = allowed_values.get(normalized_value)
+    if not normalized_gender:
+        raise ValueError("gender must be 'sister' or 'brother'")
+    return normalized_gender
