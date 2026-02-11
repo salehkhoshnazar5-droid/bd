@@ -3,7 +3,11 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base
 from app.schemas.auth import RegisterRequest
-from app.services.auth_service import authenticate_user, register_user
+from app.services.auth_service import (
+    authenticate_user,
+    enforce_single_national_id_authentication,
+    register_user,
+)
 
 # Ensure SQLAlchemy relationships are fully registered for tests
 import app.models.audit_log  # noqa: F401
@@ -56,3 +60,32 @@ def test_authenticate_user_fails_with_wrong_student_number():
     authenticated_user = authenticate_user(db, "1111122222", "123456789")
 
     assert authenticated_user is None
+
+
+def test_enforce_single_national_id_authentication_is_idempotent_for_valid_user_logins():
+    db = make_db_session()
+    payload = RegisterRequest(
+        first_name="مهدی",
+        last_name="کاظمی",
+        student_number="555666777",
+        national_code="2222233333",
+        phone_number="09351234567",
+        gender="brother",
+        address="اصفهان",
+    )
+
+    user = register_user(db, payload)
+
+    # First successful authentication marks the profile as authenticated
+    enforce_single_national_id_authentication(db, user)
+
+    refreshed_user = authenticate_user(db, "2222233333", "555666777")
+    assert refreshed_user is not None
+    assert refreshed_user.profile.has_authenticated is True
+
+    # Subsequent successful logins should not be blocked
+    enforce_single_national_id_authentication(db, refreshed_user)
+
+    authenticated_again = authenticate_user(db, "2222233333", "555666777")
+    assert authenticated_again is not None
+    assert authenticated_again.student_number == "555666777"

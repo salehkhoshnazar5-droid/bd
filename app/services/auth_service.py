@@ -194,12 +194,7 @@ def authenticate_user(db: Session, national_code: str, password: str):
     return None
 
 def enforce_single_national_id_authentication(db: Session, user: User) -> None:
-    """
-    جلوگیری از احراز هویت تکراری با کد ملی.
 
-    اگر کاربر قبلاً با کد ملی خود احراز هویت کرده باشد،
-    خطا برگردانده می‌شود. در غیر این صورت، وضعیت احراز هویت ثبت می‌شود.
-    """
     profile = db.query(StudentProfile).filter(
         StudentProfile.user_id == user.id
     ).first()
@@ -208,10 +203,7 @@ def enforce_single_national_id_authentication(db: Session, user: User) -> None:
         return
 
     if profile.has_authenticated:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="این کد ملی قبلاً برای احراز هویت استفاده شده است"
-        )
+        return
 
     profile.has_authenticated = True
     try:
