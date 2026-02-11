@@ -6,7 +6,7 @@ from datetime import datetime
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from app.core.deps import get_db
-from app.routers.admin_access import ensure_admin_interface_aut, ensure_admin_interface_auth
+from app.routers.admin_access import ensure_admin_interface_auth, ensure_admin_interface_auth
 from app.models.audit_log import AuditLog
 
 
@@ -74,7 +74,7 @@ def export_audit_logs_csv(
 
 @router.get("/export/excel")
 def export_audit_logs_excel(
-request: Request,
+    request: Request,
     db: Session = Depends(get_db),
     user_id: int | None = Query(None),
     action: str | None = Query(None),

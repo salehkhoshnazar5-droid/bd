@@ -129,6 +129,7 @@ app.add_middleware(
     allow_headers=list(settings.cors_allow_headers),
 )
 
+
 # Middleware برای لاگ‌گیری درخواست‌ها
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
