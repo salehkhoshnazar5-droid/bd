@@ -30,7 +30,7 @@ class Settings:
     access_token_expire_minutes: int
     cookie_secure: bool
     log_level: str
-    admin_password_hash: str
+    admin_login_password: str
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
@@ -45,7 +45,7 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE"), False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
-        admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH", ""),
+        admin_login_password=os.getenv("ADMIN_LOGIN_PASSWORD", "admin123"),
     )
 
 @lru_cache(maxsize=1)
@@ -61,7 +61,7 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE"), False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
-        admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH", ""),
+        admin_login_password=os.getenv("ADMIN_LOGIN_PASSWORD", "change-me"),
     )
 
 
