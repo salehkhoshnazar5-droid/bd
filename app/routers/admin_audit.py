@@ -1,6 +1,6 @@
 import csv
 from io import StringIO
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 from io import BytesIO
@@ -97,6 +97,11 @@ def export_audit_logs_excel(
         query = query.filter(AuditLog.created_at <= date_to)
 
     logs = query.order_by(AuditLog.created_at.desc()).all()
+    try:
+        from openpyxl import Workbook
+    except ModuleNotFoundError as exc:
+        raise HTTPException(status_code=503, detail="کتابخانه openpyxl در محیط نصب نیست.") from exc
+
 
     # تولید فایل Excel
     from openpyxl import Workbook

@@ -1,56 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}ورود مدیریت{% endblock %}
+{% block title %}ورود مدیر{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h4 class="mb-3">ورود به پنل مدیریت</h4>
-                <p class="text-muted small">
-                    لطفاً رمز عبور مدیریت را وارد کنید.
-                </p>
+  <div class="col-md-5 col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="text-center mb-3">
+          <i class="bi bi-shield-lock-fill text-danger"></i>
+          ورود مدیر سیستم
+        </h5>
+        <p class="text-muted small text-center mb-4">
+          لطفاً رمز عبور مدیر را وارد کنید.
+        </p>
 
-                {% if error_message %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error_message }}
-                    {% if remaining_seconds > 0 %}
-                    <div class="mt-2 small">
-                        زمان باقی‌مانده: {{ (remaining_seconds // 60) }} دقیقه و {{ (remaining_seconds % 60) }} ثانیه
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
+        {% if error_message %}
+          <div class="alert alert-danger" role="alert">
+            {{ error_message }}
+          </div>
+        {% endif %}
 
-                {% if remaining_seconds > 0 and not error_message %}
-                <div class="alert alert-warning" role="alert">
-                    لطفاً تا پایان زمان انتظار ({{ (remaining_seconds // 60) }} دقیقه و {{ (remaining_seconds % 60) }} ثانیه) صبر کنید.
-                </div>
-                {% endif %}
-
-                <form method="post" action="/admin/login" novalidate>
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-                    <div class="mb-3">
-                        <label for="password" class="form-label">رمز عبور مدیریت</label>
-                        <input
-                            type="password"
-                            class="form-control"
-                            id="password"
-                            name="password"
-                            required
-                            autocomplete="current-password"
-                            {% if remaining_seconds > 0 %}disabled{% endif %}
-                        >
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100" {% if remaining_seconds > 0 %}disabled{% endif %}>
-                        ورود
-                    </button>
-                </form>
-            </div>
-        </div>
+        <form method="post" action="/ui-auth/admin/login">
+          <input type="hidden" name="redirect_url" value="{{ redirect_url if redirect_url }}">
+          <div class="mb-3">
+            <label class="form-label">رمز عبور مدیر</label>
+            <input type="password" name="password" class="form-control" required autocomplete="current-password">
+          </div>
+          <button class="btn btn-danger w-100" type="submit">
+            ورود به داشبورد مدیر
+          </button>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

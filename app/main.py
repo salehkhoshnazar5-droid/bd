@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import logging
 from sqlalchemy.exc import SQLAlchemyError
-from app.routers import admin_audit
+from app.routers import admin_audit, admin_auth_ui
 from app.routers import student, admin, test, user, admin_ui, admin_dashboard, ui_dashboard, admin_access
 from app.core.database import create_database
 from app.routers.auth import router as auth_router
@@ -357,6 +357,7 @@ app.include_router(admin_access.router)
 app.include_router(admin_ui.router)
 app.include_router(admin_dashboard.router)
 app.include_router(ui_dashboard.router)
+app.include_router(admin_auth_ui.router)
 app.include_router(admin_audit.router)
 
 
