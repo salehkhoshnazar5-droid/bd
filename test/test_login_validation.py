@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from app.core.json_utils import make_json_safe
 from app.core.validators import validate_national_code, validate_student_number
 
 
@@ -42,3 +43,20 @@ def test_login_template_uses_html_pattern_for_exact_digits_without_escaped_backs
 
     assert '\\\\d{10}' not in template
     assert '\\\\d{9}' not in template
+
+
+def test_make_json_safe_converts_bytes_to_text_for_validation_responses():
+    assert make_json_safe(b"hello") == "hello"
+
+
+def test_make_json_safe_handles_nested_bytes_payloads():
+    payload = {
+        "raw": b"\xd8\xa7\xd8\xaf\xd9\x85\xdb\x8c\xd9\x86",
+        "items": [b"one", {"two": b"2"}],
+    }
+
+    converted = make_json_safe(payload)
+
+    assert converted["raw"] == "ادمین"
+    assert converted["items"][0] == "one"
+    assert converted["items"][1]["two"] == "2"

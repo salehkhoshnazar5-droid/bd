@@ -15,7 +15,7 @@ from app.core.database import create_database
 from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
 from app.core.confing import settings
-
+from app.core.json_utils import make_json_safe
 
 
 # تنظیمات لاگ‌گیری
@@ -172,14 +172,21 @@ else:
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """مدیریت خطاهای validation."""
-    logger.warning(f"⚠️ Validation error: {exc.errors()}")
+    logger.warning(
+        "⚠️ Validation error: path=%s content_type=%s errors=%s",
+        request.url.path,
+        request.headers.get("content-type"),
+        exc.errors(),
+    )
+
+    safe_body = make_json_safe(exc.body)
 
     return JSONResponse(
         status_code=422,
         content={
             "detail": "خطای اعتبارسنجی داده‌ها",
             "errors": exc.errors(),
-            "body": exc.body
+            "body": safe_body
         },
     )
 
