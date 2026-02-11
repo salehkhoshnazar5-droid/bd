@@ -48,17 +48,18 @@ def normalize_digits(value: Any) -> Optional[str]:
         return normalized
 
 def _normalize_fixed_digits(value: Any, *, length: int, field_name: str) -> str:
-        normalized = normalize_digits(value)
-        if normalized is None or normalized == "":
-            raise ValueError(f"{field_name} الزامی است")
+    text_value = _coerce_to_text(value)
+    normalized = unicodedata.normalize("NFKC", text_value).translate(
+        _DIGIT_TRANSLATION) if text_value is not None else None
+    if normalized is None or normalized == "":
+        raise ValueError(f"{field_name} الزامی است")
 
-        if normalized.isdigit() and len(normalized) < length:
-            normalized = normalized.zfill(length)
 
-        if not re.fullmatch(rf"\d{{{length}}}", normalized):
-            raise ValueError(f"{field_name} باید {length} رقم باشد")
+    if not re.fullmatch(rf"\d{{{length}}}", normalized):
+        persian_length = str(length).translate(str.maketrans("0123456789", _PERSIAN_DIGITS))
+        raise ValueError(f"{field_name} باید {persian_length} رقم باشد")
 
-        return normalized
+    return normalized
 
 def validate_student_number(value: Any) -> Optional[str]:
     if value is None:
@@ -68,23 +69,19 @@ def validate_student_number(value: Any) -> Optional[str]:
 def validate_phone_number(value: Any) -> Optional[str]:
     if value is None:
         return value
-    value = normalize_digits(value)
+
+    text_value = _coerce_to_text(value)
+    value = unicodedata.normalize("NFKC", text_value).translate(_DIGIT_TRANSLATION) if text_value is not None else None
 
     if not re.fullmatch(r"\d{11}", value):
         raise ValueError("شماره تماس باید ۱۱ رقم باشد")
-
-    if not re.fullmatch(r"09\d{9}", value):
-        raise ValueError("شماره تماس باید با ۰۹ شروع شده و ۱۱ رقم باشد")
     return value
 
 
 def validate_national_code(value: Any) -> Optional[str]:
     if value is None:
         return value
-    value = normalize_digits(value)
-    if not re.fullmatch(r"\d{10}", value):
-        raise ValueError("کد ملی معتبر نیست")
-    return value
+    return _normalize_fixed_digits(value, length=10, field_name="کد ملی")
 
 def validate_gender(value: Optional[str]) -> Optional[str]:
     if value is None:

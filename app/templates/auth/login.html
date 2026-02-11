@@ -30,12 +30,12 @@
           <input type="hidden" name="redirect_url" value="{{ redirect_url if redirect_url }}">
           <div class="mb-3">
             <label class="form-label">کد ملی</label>
-            <input type="text" name="national_code" class="form-control" value="{{ national_code if national_code }}" pattern="\\d{10}" inputmode="numeric" required>
+            <input type="text" name="national_code" class="form-control" value="{{ national_code if national_code }}" pattern="[0-9]{10}" minlength="10" maxlength="10" title="کد ملی باید دقیقاً ۱۰ رقم باشد" inputmode="numeric" required>
           </div>
 
           <div class="mb-2">
             <label class="form-label">رمز عبور</label>
-            <input type="password" name="password" class="form-control" pattern="\\d{9}" inputmode="numeric" required>
+            <input type="password" name="password" class="form-control" pattern="[0-9]{9}" minlength="9" maxlength="9" title="شماره دانشجویی باید دقیقاً ۹ رقم باشد" inputmode="numeric" required>
             <div class="form-text">
               رمز عبور شما همان شماره دانشجویی است.
             </div>

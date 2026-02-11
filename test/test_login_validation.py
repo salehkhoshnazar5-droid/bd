@@ -1,0 +1,44 @@
+from pathlib import Path
+
+import pytest
+
+from app.core.validators import validate_national_code, validate_student_number
+
+
+def test_validate_national_code_accepts_exact_10_digits():
+    assert validate_national_code("0123456789") == "0123456789"
+
+
+def test_validate_national_code_normalizes_persian_digits_and_spaces():
+    assert validate_national_code("۰۱۲ ۳۴۵-۶۷۸۹") == "0123456789"
+
+
+def test_validate_national_code_rejects_short_input_instead_of_zero_padding():
+    with pytest.raises(ValueError, match="کد ملی باید 10 رقم باشد"):
+        validate_national_code("123456789")
+
+
+def test_validate_student_number_accepts_exact_9_digits():
+    assert validate_student_number("123456789") == "123456789"
+
+
+def test_validate_student_number_rejects_short_input_instead_of_zero_padding():
+    with pytest.raises(ValueError, match="شماره دانشجویی باید 9 رقم باشد"):
+        validate_student_number("12345678")
+
+
+def test_login_template_uses_html_pattern_for_exact_digits_without_escaped_backslashes():
+    template = Path("app/templates/auth/login.html").read_text(encoding="utf-8")
+
+    assert 'name="national_code"' in template
+    assert 'pattern="[0-9]{10}"' in template
+    assert 'minlength="10"' in template
+    assert 'maxlength="10"' in template
+
+    assert 'name="password"' in template
+    assert 'pattern="[0-9]{9}"' in template
+    assert 'minlength="9"' in template
+    assert 'maxlength="9"' in template
+
+    assert '\\\\d{10}' not in template
+    assert '\\\\d{9}' not in template
