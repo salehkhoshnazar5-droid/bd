@@ -27,7 +27,6 @@ def test_admin_login_success_redirects_to_dashboard():
                 'password': DEFAULT_ADMIN_PASSWORD,
                 'csrf_token': csrf_token,
             },
-            follow_redirects=False,
         )
 
         assert response.status_code == 303
@@ -56,6 +55,6 @@ def test_admin_login_wrong_password_enforces_lockout():
 
 def test_admin_dashboard_requires_authentication():
     with TestClient(app) as client:
-        response = client.get('/admin/dashboard', follow_redirects=False)
+        response = client.get('/admin/dashboard')
         assert response.status_code == 303
         assert response.headers['location'] == '/admin/login'
