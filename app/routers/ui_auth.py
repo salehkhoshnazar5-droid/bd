@@ -182,7 +182,7 @@ async def submit_login(
     national_code: str = Form(...),  # کد ملی
     password: str = Form(...),  # شماره دانشجویی
     remember_me: Optional[str] = Form(None),
-    redirect_url: Optional[str] = Form("/ui/dashboard"),
+    redirect_url: Optional[str] = Form(None),
     db: Session = DBDep()
 ):
     logger.info("UI login attempt received")
@@ -200,14 +200,13 @@ async def submit_login(
             },
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
-    try:
-        user = authenticate_user(
-            db,
-            national_code=normalized_national_code,
-            password=password,
+
+    user = authenticate_user(
+        db,
+        national_code=normalized_national_code,
+        password=password,
         )
-    except Exception:
-        logger.exception("UI login query failed")
+    if not user:
         return templates.TemplateResponse(
             "auth/login.html",
             {
@@ -276,9 +275,13 @@ async def submit_login(
 
     max_age = 30 * 24 * 60 * 60 if remember_me else 24 * 60 * 60
 
+    target_url = redirect_url or (
+        "/admin/dashboard" if user.role and user.role.name == "admin" else "/ui-auth/dashboard"
+    )
+
     logger.info("UI login success: user_id=%s", user.id)
     response = RedirectResponse(
-        url=redirect_url,
+        url=target_url,
         status_code=status.HTTP_303_SEE_OTHER
     )
 
@@ -311,9 +314,23 @@ async def logout_user():
 # Dashboard
 # ----------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
-async def user_dashboard(request: Request):
-    """Backward-compatible redirect to the canonical UI dashboard route."""
-    return RedirectResponse(
-        url="/ui/dashboard",
-        status_code=status.HTTP_303_SEE_OTHER
+async def user_dashboard(
+    request: Request,
+    db: Session = DBDep()
+):
+    token = request.cookies.get("access_token")
+
+    if not token:
+        return RedirectResponse(
+            url="/ui-auth/login?redirect=/ui-auth/dashboard",
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+
+    return templates.TemplateResponse(
+        "dashboard/index.html",
+        {
+            "request": request,
+            "title": "داشبورد کاربری",
+            "message": "به داشبورد خوش آمدید"
+        }
     )

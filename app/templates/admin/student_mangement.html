@@ -1,0 +1,56 @@
+def admin_create_student(db: Session, data: AdminStudentUpdate) -> StudentProfile:
+    _check_uniqueness(db, data.national_code, data.student_number, exclude_user_id=0)
+
+    existing_national_code = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.national_code == data.national_code)
+        .first()
+    )
+    if existing_national_code:
+        raise HTTPException(status_code=400, detail="کد ملی قبلاً ثبت شده است")
+
+    existing_phone = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.phone_number == data.phone_number)
+        .first()
+    )
+    if existing_phone:
+        raise HTTPException(status_code=400, detail="شماره تماس قبلاً ثبت شده است")
+
+    user_role = db.query(Role).filter(Role.name == "user").first()
+    if not user_role:
+        user_role = Role(name="user", description="کاربر عادی")
+        db.add(user_role)
+        db.flush()
+
+    user = User(
+        student_number=data.student_number,
+        hashed_password=hash_password(data.student_number),
+        role_id=user_role.id,
+    )
+    db.add(user)
+    db.flush()
+
+    profile = StudentProfile(
+        user_id=user.id,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        student_number=data.student_number,
+        national_code=data.national_code,
+        phone_number=data.phone_number,
+        gender=data.gender.value if hasattr(data.gender, "value") else data.gender,
+        address=data.address,
+    )
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+def admin_delete_student(db: Session, student_id: int) -> None:
+    profile = get_student_by_id(db, student_id)
+    user = profile.user
+    db.delete(profile)
+    if user:
+        db.delete(user)
+    db.commit()

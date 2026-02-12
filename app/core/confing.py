@@ -1,16 +1,25 @@
 import os
+from dotenv import load_dotenv
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional, Tuple
 
 
-def _parse_bool(value: str, default: bool) -> bool:
+
+load_dotenv()
+
+ADMIN_LOGIN_PASSWORD = os.getenv("ADMIN_LOGIN_PASSWORD")
+
+if not ADMIN_LOGIN_PASSWORD:
+    raise ValueError("ADMIN_LOGIN_PASSWORD environment variable is not set.")
+
+def _parse_bool(value: Optional[str], default: bool) -> bool:
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _parse_csv(value: str, default: Tuple[str, ...]) -> Tuple[str, ...]:
+def _parse_csv(value: Optional[str], default: Tuple[str, ...]) -> Tuple[str, ...]:
     if value is None:
         return default
     items = [item.strip() for item in value.split(",") if item.strip()]
@@ -32,9 +41,18 @@ class Settings:
     log_level: str
 
 
-
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    admin_login_password = os.getenv("ADMIN_LOGIN_PASSWORD")
+    if not admin_login_password:
+        raise ValueError("ADMIN_LOGIN_PASSWORD environment variable is not set.")
+
+    access_token_expire_minutes = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+    try:
+        access_token_expire_minutes = int(access_token_expire_minutes)
+    except ValueError:
+        raise ValueError(f"ACCESS_TOKEN_EXPIRE_MINUTES must be an integer, got {access_token_expire_minutes}.")
+
     return Settings(
         database_url=os.getenv("DATABASE_URL", "sqlite:///./basij.db"),
         sql_echo=_parse_bool(os.getenv("SQL_ECHO"), False),
@@ -43,8 +61,8 @@ def get_settings() -> Settings:
         cors_allow_methods=_parse_csv(os.getenv("CORS_ALLOW_METHODS"), ("*",)),
         cors_allow_headers=_parse_csv(os.getenv("CORS_ALLOW_HEADERS"), ("*",)),
         secret_key=os.getenv("SECRET_KEY", "CHANGE_THIS_SECRET_KEY"),
-        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
-        admin_login_password=os.getenv("ADMIN_LOGIN_PASSWORD", ""),
+        access_token_expire_minutes=access_token_expire_minutes,
+        admin_login_password=admin_login_password,
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE"), False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )

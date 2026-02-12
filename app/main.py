@@ -111,6 +111,8 @@ app = FastAPI(
     ]
 )
 
+app.state.templates = Jinja2Templates(directory="app/templates")
+
 # تنظیمات CORS
 cors_allow_origins = list(settings.cors_allow_origins)
 cors_allow_credentials = settings.cors_allow_credentials

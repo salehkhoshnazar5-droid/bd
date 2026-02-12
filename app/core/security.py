@@ -4,7 +4,8 @@ from typing import Optional
 import bcrypt
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security.utils import get_authorization_scheme_param
 from sqlalchemy.orm import Session
 from app.core.deps import DBDep
 from app.models.user import User
@@ -16,7 +17,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 MAX_BCRYPT_PASSWORD_BYTES = 72
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 if SECRET_KEY == "CHANGE_THIS_SECRET_KEY":
@@ -77,15 +78,34 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def get_current_user(
-        token: str = Depends(oauth2_scheme),
+        request: Request,
+        token: Optional[str] = Depends(oauth2_scheme),
         db: Session = DBDep()
 
 ) -> User:
     """
     اعتبارسنجی توکن JWT و برگرداندن کاربر.
     """
+    raw_token = token or request.cookies.get("admin_access_token") or request.cookies.get("access_token")
+    if not raw_token:
+        raise credentials_exception
+
+    if not token:
+        cookie_token = request.cookies.get("access_token")
+        if cookie_token:
+            token = cookie_token
+
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        scheme, credentials = get_authorization_scheme_param(auth_header)
+        if scheme.lower() == "bearer" and credentials:
+            token = credentials
+
+    if not token:
+        raise credentials_exception
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
 
         student_number: str = payload.get("sub")
         national_code: str = payload.get("national_code")  # اضافه کردن کد ملی به payload

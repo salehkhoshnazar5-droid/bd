@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.deps import get_db
 from app.core.security import get_current_admin
 from app.schemas.student import StudentProfileOut, AdminStudentUpdate
 from app.services import user_service
-from app.services.user_service import _check_uniqueness  # import صحیح تابع
+from app.models.user import User
 
 router = APIRouter(
     prefix="/admin",
@@ -20,19 +20,20 @@ def list_students(db: Session = Depends(get_db)):
 def get_student(student_id: int, db: Session = Depends(get_db)):
     return user_service.get_student_by_id(db, student_id)
 
+@router.post("/students", response_model=StudentProfileOut, status_code=201)
+def create_student(data: AdminStudentUpdate, db: Session = Depends(get_db)):
+    return user_service.admin_create_student(db, data)
+
 @router.put("/students/{student_id}", response_model=StudentProfileOut)
 def update_student(
-        student_id: int,
-        data: AdminStudentUpdate,
-        db: Session = Depends(get_db),
+    student_id: int,
+    data: AdminStudentUpdate,
+     db: Session = Depends(get_db),
 ):
-    # چک کردن تکراری بودن شماره دانشجویی و کد ملی
-    _check_uniqueness(
-        db,
-        national_code=data.national_code,
-        student_number=data.student_number,
-        exclude_user_id=student_id
-    )
 
     return user_service.admin_update_student(db, student_id, data)
 
+@router.delete("/students/{student_id}", status_code=204)
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    user_service.admin_delete_student(db, student_id)
+    return None
