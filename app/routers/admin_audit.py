@@ -101,7 +101,10 @@ def export_audit_logs_excel(
         from openpyxl import Workbook
     except ModuleNotFoundError as exc:
         raise HTTPException(status_code=503, detail="کتابخانه openpyxl در محیط نصب نیست.") from exc
-
+    try:
+        from openpyxl import Workbook
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail="کتابخانه openpyxl نصب نشده است") from exc
 
     # تولید فایل Excel
     try:

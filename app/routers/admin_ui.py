@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import APIRouter, Depends, Request, Query, Form, HTTPException, status
@@ -8,14 +9,101 @@ from sqlalchemy.orm import Session
 
 from app.core.confing import settings
 from app.core.deps import get_db
-from app.core.security import ALGORITHM
+from app.core.security import ALGORITHM, create_access_token
 from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.schemas.student import AdminStudentUpdate
 from app.services import user_service
-
+from app.services.auth_service import authenticate_user
+from app.core.validators import validate_national_code, validate_student_number
 # ایجاد router
 router = APIRouter()
+def get_templates() -> Jinja2Templates:
+    return Jinja2Templates(directory="app/templates")
+
+
+def get_current_admin_from_cookie(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="نیاز به ورود")
+
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+        student_number: str = payload.get("sub")
+        if not student_number:
+            raise HTTPException(status_code=401, detail="توکن نامعتبر")
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="توکن نامعتبر") from exc
+
+    user = db.query(User).filter(User.student_number == student_number).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="کاربر یافت نشد")
+    if not user.role or user.role.name != "admin":
+        raise HTTPException(status_code=403, detail="دسترسی فقط برای ادمین")
+    return user
+
+
+@router.get("/admin/login", response_class=HTMLResponse)
+def show_admin_login(
+    request: Request,
+    error_message: Optional[str] = Query(None),
+):
+    return get_templates().TemplateResponse(
+        "admin/login.html",
+        {"request": request, "error_message": error_message},
+    )
+
+
+@router.post("/admin/login")
+def admin_login(
+    national_code: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        normalized_national_code = validate_national_code(national_code)
+        normalized_student_number = validate_student_number(password)
+    except ValueError as exc:
+        return RedirectResponse(
+            url=f"/admin/login?error_message={quote(str(exc))}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    user = authenticate_user(db, normalized_national_code, normalized_student_number)
+    if not user:
+        return RedirectResponse(
+            url="/admin/login?error_message=کد+ملی+یا+شماره+دانشجویی+اشتباه+است",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if not user.is_active or not user.role or user.role.name != "admin":
+        return RedirectResponse(
+            url="/admin/login?error_message=شما+دسترسی+ادمین+ندارید",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    access_token = create_access_token(
+        data={
+            "sub": user.student_number,
+            "user_id": user.id,
+            "national_code": user.profile.national_code if user.profile else None,
+            "role": user.role.name,
+        }
+    )
+
+    response = RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=24 * 60 * 60,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+    )
+    return response
 
 templates = Jinja2Templates(directory="app/templates")
 

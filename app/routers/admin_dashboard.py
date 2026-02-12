@@ -12,6 +12,8 @@ from app.core.confing import settings
 from app.core.deps import get_db
 from app.core.security import verify_password
 from app.models.user import User
+from app.routers.admin_ui import get_current_admin_from_cookie
+from app.core.security import get_current_admin
 from app.core.security import create_access_token, get_current_admin
 from app.core.validators import validate_national_code, validate_student_number
 from app.routers.admin_access import ensure_admin_interface_auth
@@ -21,6 +23,7 @@ from app.services.admin_auth_service import is_admin_authenticated
 from app.services.auth_service import authenticate_user, enforce_single_national_id_authentication
 
 router = APIRouter(prefix="/admin", tags=["Admin Dashboard"])
+templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 
@@ -194,26 +197,7 @@ def _is_authenticated_admin(request: Request) -> bool:
     return payload.get("role") == "admin_portal"
 
 
-@router.get("/api/audit-logs", response_model=dict)
-def list_audit_logs_api(
-        db: Session = Depends(get_db),
-        _: User = Depends(get_current_admin),
-        skip: int = Query(0, ge=0),
-        limit: int = Query(50, ge=1, le=200),
-        date_from: Optional[datetime] = Query(None),
-        date_to: Optional[datetime] = Query(None),
-        action: Optional[str] = Query(None),
-        user_id: Optional[int] = Query(None),
-):
-    return get_audit_logs(
-        db=db,
-        skip=skip,
-        limit=limit,
-        date_from=date_from,
-        date_to=date_to,
-        action=action,
-        user_id=user_id
-    )
+
 @router.get("/login", response_class=HTMLResponse)
 def admin_login_page(request: Request, error_message: Optional[str] = None):
     client_id = _client_identifier(request)
@@ -288,9 +272,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def admin_dashboard(
-        request: Request,
-        db: Session = Depends(get_db),
+    request: Request,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_from_cookie),
 ):
+
     """داشبورد ادمین با نمایش لاگ‌ها و کاربران ثبت‌شده."""
     if not is_admin_authenticated(request):
         return RedirectResponse(
@@ -300,12 +286,7 @@ def admin_dashboard(
 
     """داشبورد ادمین - فقط آخرین لاگ‌ها"""
 
-    users = (
-        db.query(User)
-        .options(joinedload(User.profile), joinedload(User.role))
-        .order_by(User.created_at.desc())
-        .all()
-    )
+
 
     recent_logs = get_audit_logs(db, limit=10)
     stats = get_simple_audit_stats(db)
@@ -359,14 +340,14 @@ def admin_user_details(
 
 @router.get("/audit-logs", response_class=HTMLResponse)
 def audit_logs_page(
-        request: Request,
-        db: Session = Depends(get_db),
-        skip: int = Query(0, ge=0, description="تعداد رکوردهای رد شده"),
-        limit: int = Query(50, ge=1, le=200, description="تعداد رکوردهای قابل نمایش"),
-        date_from: Optional[datetime] = Query(None, description="تاریخ شروع"),
-        date_to: Optional[datetime] = Query(None, description="تاریخ پایان"),
-        action: Optional[str] = Query(None, description="فیلتر بر اساس عمل"),
-        user_id: Optional[int] = Query(None, description="فیلتر بر اساس کاربر"),
+    request: Request,
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0, description="تعداد رکوردهای رد شده"),
+    limit: int = Query(50, ge=1, le=200, description="تعداد رکوردهای قابل نمایش"),
+    date_from: Optional[datetime] = Query(None, description="تاریخ شروع"),
+    date_to: Optional[datetime] = Query(None, description="تاریخ پایان"),
+    action: Optional[str] = Query(None, description="فیلتر بر اساس عمل"),
+    user_id: Optional[int] = Query(None, description="فیلتر بر اساس کاربر"),
 
 ):
 
@@ -383,7 +364,7 @@ def audit_logs_page(
         date_from=date_from,
         date_to=date_to,
         action=action,
-        user_id=user_id
+        user_id=user_id,
     )
 
     return templates.TemplateResponse(
@@ -404,4 +385,24 @@ def audit_logs_page(
         },
     )
 
+@router.get("/api/audit-logs", response_model=dict)
+def list_audit_logs_api(
+        db: Session = Depends(get_db),
+        _: User = Depends(get_current_admin),
+        skip: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+        date_from: Optional[datetime] = Query(None),
+        date_to: Optional[datetime] = Query(None),
+        action: Optional[str] = Query(None),
+        user_id: Optional[int] = Query(None),
+):
+    return get_audit_logs(
+        db=db,
+        skip=skip,
+        limit=limit,
+        date_from=date_from,
+        date_to=date_to,
+        action=action,
+        user_id=user_id
+    )
 
