@@ -23,7 +23,7 @@ ADMIN_LOGIN_ATTEMPT_LIMIT = 5
 ADMIN_LOGIN_BLOCK_MINUTES = 15
 ADMIN_AUTH_ALGORITHM = "HS256"
 ADMIN_DEFAULT_PASSWORD_HASH = "$2b$12$X1QCO5L9pRVF/iaqvWnToOX.2tjb2BY12OZ5dpun4.DjtTmpJgzd."
-ADMIN_PASSWORD_HASH = settings.admin_password_hash or ADMIN_DEFAULT_PASSWORD_HASH
+ADMIN_HASHED_PASSWORD = settings.admin_login_password or ADMIN_DEFAULT_PASSWORD_HASH
 
 failed_login_attempts: dict[str, dict[str, object]] = {}
 
@@ -121,7 +121,7 @@ def admin_login_submit(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         )
 
-    if not verify_password(password, ADMIN_PASSWORD_HASH):
+    if not verify_password(password, ADMIN_HASHED_PASSWORD):
         _register_failed_attempt(client_id)
         blocked_after_failure, blocked_until = _is_blocked(client_id)
         error_message = "رمز عبور مدیر نادرست است."

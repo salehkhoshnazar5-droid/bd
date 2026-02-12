@@ -254,7 +254,7 @@ async def read_root():
 
                             <a href="/admin/login" class="btn btn-primary btn-lg px-4">
                                     <i class="bi bi-shield-lock me-2"></i>
-                                    ورود مدیر
+                                    رابط مدیریتی
                                 </a>
                                 <a href="/ui-auth" class="btn btn-outline-primary btn-lg px-4">
                                     <i class="bi bi-display me-2"></i>

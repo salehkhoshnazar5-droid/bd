@@ -27,9 +27,10 @@ class Settings:
     cors_allow_headers: Tuple[str, ...]
     secret_key: str
     access_token_expire_minutes: int
+    admin_login_password: str
     cookie_secure: bool
     log_level: str
-    admin_password_hash: Optional[str]
+
 
 
 @lru_cache(maxsize=1)
@@ -43,9 +44,9 @@ def get_settings() -> Settings:
         cors_allow_headers=_parse_csv(os.getenv("CORS_ALLOW_HEADERS"), ("*",)),
         secret_key=os.getenv("SECRET_KEY", "CHANGE_THIS_SECRET_KEY"),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
+        admin_login_password=os.getenv("ADMIN_LOGIN_PASSWORD", ""),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE"), False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
-        admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH"),
     )
 
 
