@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-DEFAULT_ADMIN_PASSWORD = '{aZ9$kL2#mN8&qR5*vX1@pY4%wB".}'
+DEFAULT_ADMIN_PASSWORD = '{aZ9$kL2#mN8&qR5*vX1@pY4%wB}'
 
 
 def _extract_csrf_token(html: str) -> str:
