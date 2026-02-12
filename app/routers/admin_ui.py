@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from urllib.parse import quote
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import APIRouter, Depends, Request, Query, Form, HTTPException, status
@@ -197,7 +197,7 @@ def manage_students_page(
     result = user_service.get_students_paginated(db, skip=skip, limit=limit)
     edit_student = user_service.get_student_by_id(db, edit_id) if edit_id else None
     return templates.TemplateResponse(
-        "admin/student_management.html",
+        "admin/student_mangement.html",
         {
             "request": request,
             "students": result["students"],
