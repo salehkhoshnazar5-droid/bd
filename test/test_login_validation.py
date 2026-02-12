@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-
+from starlette.datastructures import FormData
 from app.core.json_utils import make_json_safe
 from app.core.validators import validate_national_code, validate_student_number
 
@@ -60,3 +60,13 @@ def test_make_json_safe_handles_nested_bytes_payloads():
     assert converted["raw"] == "ادمین"
     assert converted["items"][0] == "one"
     assert converted["items"][1]["two"] == "2"
+
+    def test_make_json_safe_converts_formdata_to_plain_dict():
+        form_data = FormData([("national_code", "0123456789"), ("password", "123456789")])
+
+        converted = make_json_safe(form_data)
+
+        assert converted == {
+            "national_code": "0123456789",
+            "password": "123456789",
+        }
