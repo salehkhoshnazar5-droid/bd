@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.audit_log import AuditLog
+        from app.models.audit_log import AuditLog
 
 if TYPE_CHECKING:
     from app.models.student_profile import StudentProfile

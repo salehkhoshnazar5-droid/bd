@@ -126,7 +126,6 @@ def admin_login(
         max_age=24 * 60 * 60,
     )
     return response
-templates = Jinja2Templates(directory="app/templates")
 
 ADMIN_COOKIE_NAME = "admin_access_token"
 ADMIN_LOGIN_ATTEMPT_LIMIT = 5

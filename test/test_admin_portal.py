@@ -7,7 +7,7 @@ client = TestClient(app)
 
 
 def test_admin_dashboard_requires_authentication():
-    response = client.get("/admin/dashboard", follow_redirects=False)
+    response = client.get("/admin/dashboard")
 
     assert response.status_code == 303
     assert response.headers["location"] == "/admin/login"
@@ -24,7 +24,6 @@ def test_admin_login_accepts_default_password_and_sets_cookie():
     response = client.post(
         "/admin/login",
         data={"password": '{aZ9$kL2#mN8&qR5*vX1@pY4%wB".}'},
-        follow_redirects=False,
     )
 
     assert response.status_code == 303

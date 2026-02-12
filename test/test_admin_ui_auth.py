@@ -1,45 +1,42 @@
-from types import SimpleNamespace
-
-from app.services import admin_auth_service
-
-
-class DummyRequest:
-    def __init__(self, ip: str):
-        self.headers = {"x-forwarded-for": ip}
-        self.client = SimpleNamespace(host=ip)
-        self.cookies = {}
-
+from fastapi.testclient import TestClient
+from app.main import app  # اپ FastAPI خود را وارد کنید
 
 def test_admin_auth_rejects_invalid_password_with_error_message():
-    request = DummyRequest("10.10.10.1")
+    # ایجاد یک شیء TestClient
+    client = TestClient(app)
 
-    authenticated, message = admin_auth_service.authenticate_admin_password(request, "wrong-password")
+    # ارسال درخواست POST به مسیر مناسب برای تست
+    response = client.post("/admin/authenticate", data={"password": "wrong-password"})
 
-    assert authenticated is False
-    assert "رمز عبور ادمین اشتباه است" in message
-
+    # بررسی اینکه آیا پاسخ درست است
+    assert response.status_code == 400  # وضعیت خطا در صورت رمز عبور اشتباه
+    assert "رمز عبور ادمین اشتباه است" in response.json()["detail"]
 
 def test_admin_auth_locks_after_five_failed_attempts():
-    global authenticated
-    request = DummyRequest("10.10.10.2")
+    # ایجاد یک شیء TestClient
+    global response
+    client = TestClient(app)
 
-    last_message = None
+    # ارسال درخواست‌های اشتباه
     for _ in range(5):
-        authenticated, last_message = admin_auth_service.authenticate_admin_password(request, "wrong-password")
+        response = client.post("/admin/authenticate", data={"password": "wrong-password"})
 
-    assert authenticated is False
-    assert "قفل" in last_message
-
+    # بررسی اینکه آیا پس از 5 تلاش اشتباه قفل شده است
+    assert response.status_code == 400
+    assert "قفل" in response.json()["detail"]
 
 def test_admin_auth_accepts_default_password_and_creates_token():
-    request = DummyRequest("10.10.10.3")
+    # ایجاد یک شیء TestClient
+    client = TestClient(app)
 
-    authenticated, message = admin_auth_service.authenticate_admin_password(request, "admin123456")
+    # ارسال درخواست با رمز عبور درست
+    response = client.post("/admin/authenticate", data={"password": "admin123456"})
 
-    assert authenticated is True
-    assert message is None
+    # بررسی اینکه آیا وارد شده است
+    assert response.status_code == 200
+    assert "admin_access_token" in response.cookies  # بررسی اینکه توکن در کوکی‌ها وجود دارد
 
-    token = admin_auth_service.create_admin_token()
-    request.cookies["admin_access_token"] = token
-
-    assert admin_auth_service.is_admin_authenticated(request) is True
+    # بررسی اینکه آیا توکن معتبر است
+    token = response.cookies["admin_access_token"]
+    response = client.get("/admin/profile", cookies={"admin_access_token": token})
+    assert response.status_code == 200  # بررسی وضعیت در صورت تایید ورود

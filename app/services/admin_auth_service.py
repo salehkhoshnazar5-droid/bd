@@ -85,6 +85,7 @@ def create_admin_token() -> str:
 
 
 def is_admin_authenticated(request: Request) -> bool:
+    global JWTError
     token = request.cookies.get("admin_access_token")
     if not token:
         return False

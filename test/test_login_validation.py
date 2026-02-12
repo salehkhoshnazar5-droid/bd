@@ -70,3 +70,9 @@ def test_make_json_safe_handles_nested_bytes_payloads():
             "national_code": "0123456789",
             "password": "123456789",
         }
+
+    def test_admin_ui_does_not_register_conflicting_admin_login_route():
+        router_source = Path("app/routers/admin_ui.py").read_text(encoding="utf-8")
+
+        assert '@router.get("/admin/login"' not in router_source
+        assert '@router.post("/admin/login")' not in router_source

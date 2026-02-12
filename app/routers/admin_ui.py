@@ -46,7 +46,7 @@ def get_current_admin_from_cookie(
     return user
 
 
-@router.get("/admin/login", response_class=HTMLResponse)
+@router.get("/admin/student-login", response_class=HTMLResponse)
 def show_admin_login(
     request: Request,
     error_message: Optional[str] = Query(None),
@@ -57,7 +57,7 @@ def show_admin_login(
     )
 
 
-@router.post("/admin/login")
+@router.post("/admin/student-login")
 def admin_login(
     national_code: str = Form(...),
     password: str = Form(...),
@@ -108,28 +108,6 @@ def admin_login(
 templates = Jinja2Templates(directory="app/templates")
 
 
-def get_current_admin_from_cookie(
-    request: Request,
-    db: Session = Depends(get_db),
-) -> User:
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="نیاز به ورود")
-
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
-        student_number: str = payload.get("sub")
-        if not student_number:
-            raise HTTPException(status_code=401, detail="توکن نامعتبر")
-    except JWTError as exc:
-        raise HTTPException(status_code=401, detail="توکن نامعتبر") from exc
-
-    user = db.query(User).filter(User.student_number == student_number).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="کاربر یافت نشد")
-    if not user.role or user.role.name != "admin":
-        raise HTTPException(status_code=403, detail="دسترسی فقط برای ادمین")
-    return user
 
 @router.get("/audit-logs", response_class=HTMLResponse)
 def audit_logs_page(
