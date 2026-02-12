@@ -14,118 +14,16 @@ from app.core.security import verify_password
 from app.models.user import User
 from app.routers.admin_ui import get_current_admin_from_cookie
 from app.core.security import get_current_admin
-from app.core.security import create_access_token, get_current_admin
-from app.core.validators import validate_national_code, validate_student_number
-from app.routers.admin_access import ensure_admin_interface_auth
 from app.services.audit_service import get_audit_logs, get_simple_audit_stats
 from app.services.admin_auth_service import is_admin_authenticated
 
-from app.services.auth_service import authenticate_user, enforce_single_national_id_authentication
 
 router = APIRouter(prefix="/admin", tags=["Admin Dashboard"])
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 
-@router.get("/login", response_class=HTMLResponse)
-def admin_login_page(request: Request, error_message: Optional[str] = None):
-    return request.app.state.templates.TemplateResponse(
-        "admin/login.html",
-        {
-            "request": request,
-            "error_message": error_message,
-        },
-    )
 
-
-@router.post("/login", response_class=HTMLResponse)
-def admin_login(
-        request: Request,
-        national_code: str = Form(...),
-        password: str = Form(...),
-        db: Session = Depends(get_db),
-):
-    logger.info("Admin login attempt from %s", request.client.host if request.client else "unknown")
-
-    try:
-        normalized_national_code = validate_national_code(national_code)
-        normalized_student_number = validate_student_number(password)
-    except ValueError as exc:
-        return request.app.state.templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": str(exc),
-            },
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        )
-
-    user = authenticate_user(db, normalized_national_code, normalized_student_number)
-    if not user:
-        logger.warning("Admin login failed: invalid credentials")
-        return request.app.state.templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": "کد ملی یا شماره دانشجویی اشتباه است.",
-            },
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
-
-    if not user.is_active:
-        logger.warning("Admin login blocked: inactive user_id=%s", user.id)
-        return request.app.state.templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": "حساب کاربری غیرفعال است.",
-            },
-            status_code=status.HTTP_403_FORBIDDEN,
-        )
-
-    if not user.role or user.role.name != "admin":
-        logger.warning("Admin login blocked: non-admin user_id=%s", user.id)
-        return request.app.state.templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": "این حساب دسترسی ادمین ندارد.",
-            },
-            status_code=status.HTTP_403_FORBIDDEN,
-        )
-
-    try:
-        enforce_single_national_id_authentication(db, user)
-    except HTTPException as exc:
-        return request.app.state.templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": exc.detail,
-            },
-            status_code=exc.status_code,
-        )
-
-    access_token = create_access_token(
-        data={
-            "sub": user.student_number,
-            "user_id": user.id,
-            "national_code": user.profile.national_code if user.profile else None,
-            "role": user.role.name,
-        }
-    )
-
-    response = RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    logger.info("Admin login success: user_id=%s redirect=/admin/dashboard", user.id)
-    response.set_cookie(
-        key="admin_access_token",
-        value=access_token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        max_age=24 * 60 * 60,
-    )
-    return response
 
 ADMIN_COOKIE_NAME = "admin_access_token"
 ADMIN_LOGIN_ATTEMPT_LIMIT = 5
