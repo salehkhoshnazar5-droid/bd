@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError
 from app.core.confing import settings
 
 
-router = APIRouter(prefix="/admin", tags=["Admin Authentication"])
+router = APIRouter(prefix="/admin/api", tags=["Admin Authentication"])
 
 
 class AdminLoginRequest(BaseModel):
