@@ -12,7 +12,7 @@ from app.services.auth_service import (
     enforce_single_national_id_authentication
 )
 from app.models.user import User
-from app.core.validators import validate_national_code, validate_student_number
+from app.core.validators import validate_national_code
 
 router = APIRouter(
     prefix="/auth",
@@ -61,7 +61,7 @@ async def login(
     """ورود به سیستم و دریافت توکن JWT."""
     try:
         national_code = validate_national_code(form_data.username)
-        student_number = validate_student_number(form_data.password)
+        password = form_data.password
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -71,7 +71,7 @@ async def login(
     user = authenticate_user(
         db,
         national_code=national_code,
-        password=student_number
+        password=password
         # رمز عبور برابر با شماره دانشجویی است
     )
 

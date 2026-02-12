@@ -164,10 +164,7 @@ def authenticate_user(db: Session, national_code: str, password: str):
         candidates = (
             db.query(User)
             .join(StudentProfile, StudentProfile.user_id == User.id)
-            .filter(
-                StudentProfile.national_code == normalized_national_code,
-                User.student_number == normalized_password,
-            )
+            .filter(StudentProfile.national_code == normalized_national_code)
             .all()
         )
     except SQLAlchemyError as exc:
@@ -182,19 +179,19 @@ def authenticate_user(db: Session, national_code: str, password: str):
 
     # بررسی وجود کاربر و صحت رمز عبور (که در اینجا باید برابر با شماره دانشجویی باشد)
     logger.info(
-        "Login attempt: national_code=%s student_number=%s matched_users=%s",
+        "Login attempt: national_code=%s matched_users=%s",
         normalized_national_code,
-        normalized_password,
         len(candidates),
     )
 
     for candidate in candidates:
-        logger.debug(
-            "Verifying password for login candidate: user_id=%s national_code=%s",
-            candidate.id,
-            normalized_national_code,
+        candidate_password = (
+            normalized_password
+            if candidate.role and candidate.role.name != "admin"
+            else password
         )
-        if verify_password(normalized_password, candidate.hashed_password):
+
+        if verify_password(candidate_password, candidate.hashed_password):
             logger.info(
                 "Login success: user_id=%s national_code=%s",
                 candidate.id,

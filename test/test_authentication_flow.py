@@ -89,3 +89,80 @@ def test_enforce_single_national_id_authentication_is_idempotent_for_valid_user_
     authenticated_again = authenticate_user(db, "2222233333", "555666777")
     assert authenticated_again is not None
     assert authenticated_again.student_number == "555666777"
+
+
+def test_authenticate_admin_user_with_non_numeric_password():
+    db = make_db_session()
+
+    from app.models.role import Role
+    from app.models.user import User
+    from app.models.student_profile import StudentProfile
+    from app.core.security import hash_password
+
+    admin_role = Role(name="admin", description="Administrator")
+    db.add(admin_role)
+    db.flush()
+
+    admin_user = User(
+        student_number="000000000",
+        hashed_password=hash_password("admin123"),
+        role_id=admin_role.id,
+    )
+    db.add(admin_user)
+    db.flush()
+
+    profile = StudentProfile(
+        user_id=admin_user.id,
+        first_name="ادمین",
+        last_name="سیستم",
+        national_code="0000000000",
+        student_number="000000000",
+        phone_number="09120000000",
+        gender="brother",
+        address="دفتر",
+    )
+    db.add(profile)
+    db.commit()
+
+    authenticated_user = authenticate_user(db, "0000000000", "admin123")
+
+    assert authenticated_user is not None
+    assert authenticated_user.id == admin_user.id
+
+
+def test_authenticate_admin_user_rejects_wrong_password():
+    db = make_db_session()
+
+    from app.models.role import Role
+    from app.models.user import User
+    from app.models.student_profile import StudentProfile
+    from app.core.security import hash_password
+
+    admin_role = Role(name="admin", description="Administrator")
+    db.add(admin_role)
+    db.flush()
+
+    admin_user = User(
+        student_number="000000000",
+        hashed_password=hash_password("admin123"),
+        role_id=admin_role.id,
+    )
+    db.add(admin_user)
+    db.flush()
+
+    profile = StudentProfile(
+        user_id=admin_user.id,
+        first_name="ادمین",
+        last_name="سیستم",
+        national_code="0000000000",
+        student_number="000000000",
+        phone_number="09120000000",
+        gender="brother",
+        address="دفتر",
+    )
+    db.add(profile)
+    db.commit()
+
+    authenticated_user = authenticate_user(db, "0000000000", "wrong-password")
+
+    assert authenticated_user is None

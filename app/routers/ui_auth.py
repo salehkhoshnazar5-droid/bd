@@ -17,13 +17,11 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import DBDep
 from app.schemas.auth import RegisterRequest, GenderEnum
-from app.services.auth_service import register_user, enforce_single_national_id_authentication
-from app.core.security import create_access_token, verify_password, SECRET_KEY, ALGORITHM
+from app.services.auth_service import register_user, enforce_single_national_id_authentication, authenticate_user
+from app.core.security import create_access_token
 from app.models.user import User
-from jose import JWTError, jwt
-from app.models.student_profile import StudentProfile
 from app.core.confing import settings
-from app.core.validators import validate_national_code, validate_student_number
+from app.core.validators import validate_national_code
 import logging
 # ----------------------------
 # Router & Templates
@@ -190,7 +188,6 @@ async def submit_login(
     logger.info("UI login attempt received")
     try:
         normalized_national_code = validate_national_code(national_code)
-        normalized_password = validate_student_number(password)
     except ValueError as exc:
         return templates.TemplateResponse(
             "auth/login.html",
@@ -204,11 +201,10 @@ async def submit_login(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
     try:
-        user = (
-            db.query(User)
-            .join(StudentProfile, StudentProfile.user_id == User.id)
-            .filter(StudentProfile.national_code == normalized_national_code)
-            .first()
+        user = authenticate_user(
+            db,
+            national_code=normalized_national_code,
+            password=password,
         )
     except Exception:
         logger.exception("UI login query failed")
@@ -226,8 +222,7 @@ async def submit_login(
 
     logger.info("UI login candidate lookup completed: user_found=%s", bool(user))
 
-
-    if not user or not verify_password(normalized_password, user.hashed_password):
+    if not user:
         logger.warning("UI login failed due to invalid credentials")
         return templates.TemplateResponse(
             "auth/login.html",
