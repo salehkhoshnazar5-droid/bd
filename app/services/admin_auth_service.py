@@ -3,10 +3,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Dict
-
+from jose import JWTError, jwt
 from fastapi import Request
 
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, verify_password, SECRET_KEY, ALGORITHM
 
 MAX_ADMIN_LOGIN_ATTEMPTS = int(os.getenv("ADMIN_MAX_LOGIN_ATTEMPTS", "5"))
 ADMIN_LOCKOUT_MINUTES = int(os.getenv("ADMIN_LOCKOUT_MINUTES", "15"))
@@ -20,15 +20,18 @@ _attempts_lock = Lock()
 logger = logging.getLogger(__name__)
 
 
-def _client_identifier(request: Request) -> str:
+def get_client_identifier(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
+def _client_identifier(request: Request) -> str:
+    return get_client_identifier(request)
+
 def _client_key(request: Request) -> str:
     """Backward-compatible alias used by older callers."""
-    return _client_identifier(request)
+    return get_client_identifier(request)
 
 def is_locked_out(request: Request) -> tuple[bool, int]:
     key = _client_identifier(request)
@@ -52,6 +55,7 @@ def is_locked_out(request: Request) -> tuple[bool, int]:
 
 def authenticate_admin_password(request: Request, password: str) -> tuple[bool, str | None]:
     try:
+        normalized_password = password.strip()
         locked, minutes = is_locked_out(request)
         if locked:
             return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
@@ -60,7 +64,7 @@ def authenticate_admin_password(request: Request, password: str) -> tuple[bool, 
             clear_failed_attempts(request)
             return True, None
 
-        key = _client_identifier(request)
+        key = get_client_identifier(request)
         now = datetime.now(timezone.utc)
 
         with _attempts_lock:
@@ -86,7 +90,7 @@ def authenticate_admin_password(request: Request, password: str) -> tuple[bool, 
 
 def clear_failed_attempts(request: Request) -> None:
     with _attempts_lock:
-        _failed_attempts.pop(_client_identifier(request), None)
+        _failed_attempts.pop(get_client_identifier(request), None)
 
 
 def create_admin_token() -> str:
@@ -99,10 +103,8 @@ def is_admin_authenticated(request: Request) -> bool:
         return False
 
     try:
-        from jose import JWTError, jwt
-        from app.core.security import SECRET_KEY, ALGORITHM
-
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub") == "admin" and payload.get("role") == "admin"
-    except JWTError:
+    except JWTError as e:
+        logger.exception("خطای پردازش توکن JWT رخ داده است.")
         return False
