@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy.exc import SQLAlchemyError
 from app.routers import admin_audit
-from app.routers import student, admin, test, user, admin_ui, admin_dashboard, ui_dashboard, admin_auth
+from app.routers import student, admin, test, user, admin_ui, admin_dashboard, ui_dashboard, admin_auth, admin_auth_ui
 from app.core.database import create_database
 from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
@@ -347,6 +347,7 @@ app.include_router(student.router)
 app.include_router(admin.router)
 app.include_router(admin_ui.router)
 app.include_router(admin_auth.router)
+app.include_router(admin_auth_ui.router)
 app.include_router(admin_dashboard.router)
 app.include_router(ui_dashboard.router)
 app.include_router(admin_audit.router)

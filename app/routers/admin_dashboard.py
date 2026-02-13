@@ -1,20 +1,23 @@
 import logging
 import secrets
-from datetime import (datetime, timezone, timedelta)
+from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.confing import settings
-
 from app.core.deps import get_db
-from app.models.user import User
 from app.core.security import get_current_admin
+from app.models.user import User
+from app.services.admin_auth_service import (
+    authenticate_admin_password,
+    create_admin_token,
+    is_admin_authenticated,
+)
 from app.services.audit_service import get_audit_logs, get_simple_audit_stats
-from app.services.admin_auth_service import is_admin_authenticated
+
 
 
 router = APIRouter(prefix="/admin", tags=["Admin Dashboard"])
@@ -24,136 +27,62 @@ logger = logging.getLogger(__name__)
 
 
 
-ADMIN_COOKIE_NAME = "admin_access_token"
-ADMIN_LOGIN_ATTEMPT_LIMIT = 5
-ADMIN_LOGIN_BLOCK_MINUTES = 15
-ADMIN_AUTH_ALGORITHM = "HS256"
-ADMIN_LOGIN_PASSWORD = settings.admin_login_password
-
-failed_login_attempts: dict[str, dict[str, object]] = {}
-
-
-def _client_identifier(request: Request) -> str:
-    if request.client and request.client.host:
-        return request.client.host
-    return "unknown"
-
-
-def _is_blocked(client_id: str) -> tuple[bool, Optional[datetime]]:
-    attempt_data = failed_login_attempts.get(client_id)
-    if not attempt_data:
-        return False, None
-
-    blocked_until = attempt_data.get("blocked_until")
-    if isinstance(blocked_until, datetime):
-        now = datetime.now(timezone.utc)
-        if blocked_until > now:
-            return True, blocked_until
-
-    # block expired
-    failed_login_attempts.pop(client_id, None)
-    return False, None
-
-
-
-def _register_failed_attempt(client_id: str) -> None:
-    now = datetime.now(timezone.utc)
-    attempt_data = failed_login_attempts.setdefault(client_id, {"count": 0, "blocked_until": None})
-    attempt_data["count"] = int(attempt_data.get("count", 0)) + 1
-
-    if attempt_data["count"] >= ADMIN_LOGIN_ATTEMPT_LIMIT:
-        attempt_data["blocked_until"] = now + timedelta(minutes=ADMIN_LOGIN_BLOCK_MINUTES)
-        attempt_data["count"] = 0
-
-
-def _reset_attempts(client_id: str) -> None:
-    failed_login_attempts.pop(client_id, None)
-
-
-def _build_admin_token() -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {
-        "sub": "admin-portal",
-        "role": "admin_portal",
-        "exp": expire,
-    }
-    return jwt.encode(payload, settings.secret_key, algorithm=ADMIN_AUTH_ALGORITHM)
-
-
-def _is_authenticated_admin(request: Request) -> bool:
-    token = request.cookies.get(ADMIN_COOKIE_NAME)
-    if not token:
-        return False
-
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[ADMIN_AUTH_ALGORITHM])
-    except JWTError:
-        return False
-
-    return payload.get("role") == "admin_portal"
-
-
-
 @router.get("/login", response_class=HTMLResponse)
 def admin_login_page(request: Request, error_message: Optional[str] = None):
-    client_id = _client_identifier(request)
-    blocked, blocked_until = _is_blocked(client_id)
+    if is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(
         "admin/login.html",
         {
             "request": request,
             "error_message": error_message,
-            "is_blocked": blocked,
-            "blocked_until": blocked_until,
+            "is_blocked": False,
+            "blocked_until": None,
         },
     )
 
 
 @router.post("/login", response_class=HTMLResponse)
 def admin_login_submit(request: Request, password: str = Form(...)):
-    client_id = _client_identifier(request)
-    blocked, blocked_until = _is_blocked(client_id)
-
-    if blocked:
-        return templates.TemplateResponse(
-            "admin/login.html",
-            {
-                "request": request,
-                "error_message": "به دلیل تلاش‌های ناموفق متعدد، ورود موقتاً مسدود شده است.",
-                "is_blocked": True,
-                "blocked_until": blocked_until,
-            },
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        )
-
-    if not secrets.compare_digest(password, ADMIN_LOGIN_PASSWORD):
-        _register_failed_attempt(client_id)
-        blocked_after_failure, blocked_until = _is_blocked(client_id)
-        error_message = "رمز عبور ادمین اشتباه است."
-        if blocked_after_failure:
-            error_message += " ورود شما برای ۱۵ دقیقه مسدود شد."
+    authenticated, error_message = authenticate_admin_password(request, password)
+    if not authenticated:
 
         return templates.TemplateResponse(
             "admin/login.html",
             {
                 "request": request,
                 "error_message": error_message,
-                "is_blocked": blocked_after_failure,
-                "blocked_until": blocked_until,
+                "is_blocked": False,
+                "blocked_until": None,
             },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    _reset_attempts(client_id)
-    token = _build_admin_token()
-
     response = RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
-        key=ADMIN_COOKIE_NAME,
-        value=token,
-        max_age=settings.access_token_expire_minutes * 60,
+        key="admin_access_token",
+        value=create_admin_token(),
+        max_age=60 * 60,
         httponly=True,
-        secure=settings.cookie_secure,  # در production → True
+        secure=False,
+        samesite="lax",
+    )
+    return response
+
+
+@router.post("/authenticate")
+def admin_authenticate(request: Request, password: str = Form(...)):
+    authenticated, error_message = authenticate_admin_password(request, password)
+    if not authenticated:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
+
+    response = JSONResponse(content={"detail": "ورود ادمین موفق بود"})
+    response.set_cookie(
+        key="admin_access_token",
+        value=create_admin_token(),
+        max_age=60 * 60,
+        httponly=True,
+        secure=False,
         samesite="lax",
     )
     return response
@@ -162,31 +91,19 @@ def admin_login_submit(request: Request, password: str = Form(...)):
 @router.get("/logout")
 def admin_logout():
     response = RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(ADMIN_COOKIE_NAME)
+    response.delete_cookie("admin_access_token")
     return response
-templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def admin_dashboard(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-
-    """داشبورد ادمین با نمایش لاگ‌ها و کاربران ثبت‌شده."""
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not is_admin_authenticated(request):
-        return RedirectResponse(
-            url="/ui-auth/admin/login?redirect=/admin/dashboard",
-            status_code=303,
-        )
-
-    """داشبورد ادمین - فقط آخرین لاگ‌ها"""
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
 
     recent_logs = get_audit_logs(db, limit=10)
     stats = get_simple_audit_stats(db)
 
-    # اضافه کردن شماره دانشجویی و کد ملی به لاگ‌ها
     users = (
         db.query(User)
         .options(joinedload(User.profile), joinedload(User.role))
@@ -204,13 +121,17 @@ def admin_dashboard(
         },
     )
 
+@router.get("/profile")
+def admin_profile(request: Request):
+    if not is_admin_authenticated(request):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="نیاز به ورود مدیر")
+
+    return {"detail": "پروفایل ادمین", "is_admin": True}
+
+
 @router.get("/users/{user_id}", response_class=HTMLResponse)
-def admin_user_details(
-    user_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    if not _is_authenticated_admin(request):
+def admin_user_details(user_id: int, request: Request, db: Session = Depends(get_db)):
+    if not is_admin_authenticated(request):
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
     user = (
@@ -223,14 +144,7 @@ def admin_user_details(
     if not user:
         raise HTTPException(status_code=404, detail="کاربر یافت نشد")
 
-    return templates.TemplateResponse(
-        "admin/user_details.html",
-        {
-            "request": request,
-            "user": user,
-        },
-    )
-
+    return templates.TemplateResponse("admin/user_details.html", {"request": request, "user": user})
 
 
 @router.get("/audit-logs", response_class=HTMLResponse)
@@ -247,10 +161,7 @@ def audit_logs_page(
 ):
 
     if not is_admin_authenticated(request):
-        return RedirectResponse(
-            url="/ui-auth/admin/login?redirect=/admin/audit-logs",
-            status_code=303,
-        )
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
     result = get_audit_logs(
         db=db,
@@ -282,14 +193,14 @@ def audit_logs_page(
 
 @router.get("/api/audit-logs", response_model=dict)
 def list_audit_logs_api(
-        db: Session = Depends(get_db),
-        _: User = Depends(get_current_admin),
-        skip: int = Query(0, ge=0),
-        limit: int = Query(50, ge=1, le=200),
-        date_from: Optional[datetime] = Query(None),
-        date_to: Optional[datetime] = Query(None),
-        action: Optional[str] = Query(None),
-        user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    date_from: Optional[datetime] = Query(None),
+    date_to: Optional[datetime] = Query(None),
+    action: Optional[str] = Query(None),
+    user_id: Optional[int] = Query(None),
 ):
     return get_audit_logs(
         db=db,
@@ -298,6 +209,6 @@ def list_audit_logs_api(
         date_from=date_from,
         date_to=date_to,
         action=action,
-        user_id=user_id
+        user_id=user_id,
     )
 
