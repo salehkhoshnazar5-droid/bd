@@ -16,9 +16,17 @@
       <li class="list-group-item"><strong>شماره دانشجویی:</strong> {{ user.student_number }}</li>
       <li class="list-group-item"><strong>کد ملی:</strong> {{ user.profile.national_code if user.profile else '-' }}</li>
       <li class="list-group-item"><strong>تلفن:</strong> {{ user.profile.phone_number if user.profile else '-' }}</li>
-      <li class="list-group-item"><strong>جنسیت:</strong> {{ user.profile.gender if user.profile else '-' }}</li>
+      <li class="list-group-item"><strong>جنسیت:</strong>
+    {% if user.profile and user.profile.gender == 'brother' %}
+        برادر
+    {% elif user.profile and user.profile.gender == 'sister' %}
+        خواهر
+    {% else %}
+        -
+    {% endif %}
+</li>
       <li class="list-group-item"><strong>آدرس:</strong> {{ user.profile.address if user.profile else '-' }}</li>
-      <li class="list-group-item"><strong>نقش:</strong> {{ user.role.name if user.role else '-' }}</li>
+      <li class="list-group-item"><strong>نقش:</strong> کاربر</li>
       <li class="list-group-item"><strong>تاریخ ثبت‌نام:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '-' }}</li>
     </ul>
   </div>

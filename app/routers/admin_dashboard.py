@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import datetime
 from typing import Optional
 
@@ -43,11 +44,7 @@ def admin_login_page(request: Request, error_message: Optional[str] = None):
 
 @router.post("/login", response_class=HTMLResponse)
 def admin_login_submit(request: Request, password: str = Form(...)):
-    try:
-        authenticated, error_message = authenticate_admin_password(request, password)
-    except Exception:
-        logger.exception("unexpected error in admin_login_submit")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    authenticated, error_message = authenticate_admin_password(request, password)
     if not authenticated:
 
         return templates.TemplateResponse(
@@ -75,11 +72,7 @@ def admin_login_submit(request: Request, password: str = Form(...)):
 
 @router.post("/authenticate")
 def admin_authenticate(request: Request, password: str = Form(...)):
-    try:
-        authenticated, error_message = authenticate_admin_password(request, password)
-    except Exception:
-        logger.exception("unexpected error in admin_authenticate")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    authenticated, error_message = authenticate_admin_password(request, password)
     if not authenticated:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
@@ -203,11 +196,11 @@ def list_audit_logs_api(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin),
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
-    date_from: Optional[datetime] = Query(None),
-    date_to: Optional[datetime] = Query(None),
-    action: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
+        limit: int = Query(50, ge=1, le=200),
+        date_from: Optional[datetime] = Query(None),
+        date_to: Optional[datetime] = Query(None),
+        action: Optional[str] = Query(None),
+        user_id: Optional[int] = Query(None),
 ):
     return get_audit_logs(
         db=db,
@@ -216,6 +209,6 @@ def list_audit_logs_api(
         date_from=date_from,
         date_to=date_to,
         action=action,
-        user_id=user_id,
+        user_id=user_id
     )
 

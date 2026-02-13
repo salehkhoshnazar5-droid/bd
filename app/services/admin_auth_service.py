@@ -46,15 +46,8 @@ def get_client_identifier(request: Request) -> str:
         return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
-def _client_identifier(request: Request) -> str:
-    return get_client_identifier(request)
-
-def _client_key(request: Request) -> str:
-    """Backward-compatible alias used by older callers."""
-    return get_client_identifier(request)
-
 def is_locked_out(request: Request) -> tuple[bool, int]:
-    key = _client_identifier(request)
+    key = get_client_identifier(request)
     now = datetime.now(timezone.utc)
 
     with _attempts_lock:
@@ -72,51 +65,31 @@ def is_locked_out(request: Request) -> tuple[bool, int]:
 
     return False, 0
 
+def _register_failed_attempt(request: Request) -> str:
+    key = get_client_identifier(request)
+    now = datetime.now(timezone.utc)
+    with _attempts_lock:
+        entry = _failed_attempts.get(key, {"count": 0, "locked_until": None})
+        entry["count"] = int(entry["count"]) + 1
+        if entry["count"] >= MAX_ADMIN_LOGIN_ATTEMPTS:
+            entry["locked_until"] = now + timedelta(minutes=ADMIN_LOCKOUT_MINUTES)
+            _failed_attempts[key] = entry
+            return f"به دلیل ورود ناموفق متوالی، دسترسی شما به مدت {ADMIN_LOCKOUT_MINUTES} دقیقه قفل شد."
+        _failed_attempts[key] = entry
+        remaining = MAX_ADMIN_LOGIN_ATTEMPTS - int(entry["count"])
+
+    return f"رمز عبور ادمین اشتباه است. {remaining} تلاش دیگر باقی مانده است."
 
 def authenticate_admin_password(request: Request, password: str) -> tuple[bool, str | None]:
-    try:
-        normalized_password = password.strip()
-        locked, minutes = is_locked_out(request)
-        if locked:
-            return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
+    locked, minutes = is_locked_out(request)
+    if locked:
+        return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
 
-        password_matches = verify_password(normalized_password, _ADMIN_PASSWORD_HASH)
-        logger.debug(
-            "Admin password verification result=%s client=%s raw_len=%d normalized_len=%d hash_prefix=%s",
-            password_matches,
-            get_client_identifier(request),
-            len(password),
-            len(normalized_password),
-            _ADMIN_PASSWORD_HASH[:7],
-        )
+    if verify_password(password.strip(), _ADMIN_PASSWORD_HASH):
+        clear_failed_attempts(request)
+        return True, None
 
-        if password_matches:
-            clear_failed_attempts(request)
-            return True, None
-
-        key = get_client_identifier(request)
-        now = datetime.now(timezone.utc)
-
-        with _attempts_lock:
-            entry = _failed_attempts.get(key, {"count": 0, "locked_until": None})
-            entry["count"] = int(entry["count"]) + 1
-
-            if entry["count"] >= MAX_ADMIN_LOGIN_ATTEMPTS:
-                entry["locked_until"] = now + timedelta(minutes=ADMIN_LOCKOUT_MINUTES)
-                _failed_attempts[key] = entry
-                return (
-                    False,
-                    f"به دلیل ورود ناموفق متوالی، دسترسی شما به مدت {ADMIN_LOCKOUT_MINUTES} دقیقه قفل شد.",
-                )
-
-            _failed_attempts[key] = entry
-            remaining = MAX_ADMIN_LOGIN_ATTEMPTS - int(entry["count"])
-
-        return False, f"رمز عبور ادمین اشتباه است. {remaining} تلاش دیگر باقی مانده است."
-    except Exception:
-        logger.exception("admin authentication failed unexpectedly")
-        return False, "خطای داخلی در احراز هویت مدیر. لطفاً دوباره تلاش کنید."
-
+    return False, _register_failed_attempt(request)
 
 def clear_failed_attempts(request: Request) -> None:
     with _attempts_lock:
@@ -135,6 +108,5 @@ def is_admin_authenticated(request: Request) -> bool:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload.get("sub") == "admin" and payload.get("role") == "admin"
-    except JWTError as e:
-        logger.exception("خطای پردازش توکن JWT رخ داده است.")
+    except JWTError:
         return False
