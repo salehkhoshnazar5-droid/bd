@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import (datetime, timezone, timedelta)
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Query, status
@@ -10,7 +11,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.confing import settings
 
 from app.core.deps import get_db
-from app.core.security import verify_password
 from app.models.user import User
 from app.routers.admin_ui import get_current_admin_from_cookie
 from app.core.security import get_current_admin
@@ -29,8 +29,7 @@ ADMIN_COOKIE_NAME = "admin_access_token"
 ADMIN_LOGIN_ATTEMPT_LIMIT = 5
 ADMIN_LOGIN_BLOCK_MINUTES = 15
 ADMIN_AUTH_ALGORITHM = "HS256"
-ADMIN_DEFAULT_PASSWORD_HASH = "$2b$12$X1QCO5L9pRVF/iaqvWnToOX.2tjb2BY12OZ5dpun4.DjtTmpJgzd."
-ADMIN_HASHED_PASSWORD = settings.admin_login_password or ADMIN_DEFAULT_PASSWORD_HASH
+ADMIN_LOGIN_PASSWORD = settings.admin_login_password
 
 failed_login_attempts: dict[str, dict[str, object]] = {}
 
@@ -55,6 +54,7 @@ def _is_blocked(client_id: str) -> tuple[bool, Optional[datetime]]:
     # block expired
     failed_login_attempts.pop(client_id, None)
     return False, None
+
 
 
 def _register_failed_attempt(client_id: str) -> None:
@@ -127,7 +127,7 @@ def admin_login_submit(request: Request, password: str = Form(...)):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         )
 
-    if not verify_password(password, ADMIN_HASHED_PASSWORD):
+    if not secrets.compare_digest(password, ADMIN_LOGIN_PASSWORD):
         _register_failed_attempt(client_id)
         blocked_after_failure, blocked_until = _is_blocked(client_id)
         error_message = "رمز عبور ادمین اشتباه است."
