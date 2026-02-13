@@ -13,7 +13,6 @@ class UserOut(BaseModel):
     class Config:
         orm_mode = True
 
-# Schema برای بروزرسانی پروفایل کاربر
 class ProfileUpdate(BaseModel):
     phone_number: Optional[str] = Field(None)
     address: Optional[str] = Field(None, max_length=200)

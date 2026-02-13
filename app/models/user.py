@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-        from app.models.audit_log import AuditLog
+    from app.models.audit_log import AuditLog
 
 if TYPE_CHECKING:
     from app.models.student_profile import StudentProfile
@@ -57,12 +57,10 @@ class User(Base):
 
     @property
     def is_admin(self):
-        """بررسی اینکه آیا کاربر admin است یا نه."""
         return self.role and self.role.name == "admin"
 
     @property
     def is_moderator(self):
-        """بررسی اینکه آیا کاربر moderator است یا نه."""
         return self.role and self.role.name == "moderator"
 
     def can(self, permission: str) -> bool:
@@ -97,8 +95,7 @@ class User(Base):
 
     @staticmethod
     def check_unique(db, national_code: str, student_number: str, exclude_user_id: int = None):
-        """بررسی تکراری بودن شماره دانشجویی یا کد ملی"""
-        from app.models.student_profile import StudentProfile  # وارد کردن StudentProfile در اینجا برای جلوگیری از Circular Import
+        from app.models.student_profile import StudentProfile
 
         user_query = db.query(User).filter(User.student_number == student_number)
         if exclude_user_id is not None:

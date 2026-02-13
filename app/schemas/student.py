@@ -7,14 +7,12 @@ from app.core.validators import (
     validate_student_number, validate_gender,
 )
 
-# Enum برای جنسیت
 class GenderEnum(str, Enum):
     sister = "sister"
     brother = "brother"
 
 
 
-# مدل پایه برای پروفایل دانشجو
 class StudentProfileBase(BaseModel):
     first_name: str = Field(..., min_length=2, max_length=50)
     last_name: str = Field(..., min_length=2, max_length=50)
@@ -40,7 +38,6 @@ class StudentProfileBase(BaseModel):
         orm_mode = True
 
 
-# کلاس برای بروزرسانی پروفایل توسط دانشجو
 class StudentProfileUpdate(BaseModel):
     national_code: Optional[str] = Field(None)
     phone_number: Optional[str] = Field(None)
@@ -64,19 +61,16 @@ class StudentProfileUpdate(BaseModel):
         orm_mode = True
 
 
-# کلاس برای بروزرسانی پروفایل توسط ادمین
 class AdminStudentUpdate(StudentProfileBase):
     pass
 
 
-# کلاس خروجی پروفایل دانشجویی (Student)
 class StudentProfileOut(StudentProfileBase):
     id: int
     class Config:
         orm_mode = True
 
 
-# مدل خروجی ساده برای ORM / دیتابیس
 class StudentProfileOutDB(BaseModel):
     id: int
     student_number: str

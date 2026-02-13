@@ -1,12 +1,9 @@
-# scripts/test_final.py
 import requests
-import json
 
 BASE_URL = "http://localhost:8000"
 
 
 def test_final_system():
-    """تست نهایی سیستم."""
 
     print("🧪 تست نهایی سیستم مدیریت بسیج")
     print("=" * 60)

@@ -31,19 +31,11 @@ def _normalize_and_require_pattern(
     return normalized_value
 
 def normalize_digits(value: Any) -> Optional[str]:
-        """
-        نرمال‌سازی ورودی‌های عددی.
-
-        - تبدیل ارقام فارسی/عربی به انگلیسی
-        - حذف فاصله‌ها و کاراکترهای قالب‌بندی متداول
-        - پشتیبانی از ورودی‌های غیررشته‌ای (مثل int)
-        """
         text_value = _coerce_to_text(value)
         if text_value is None:
             return None
 
         normalized = unicodedata.normalize("NFKC", text_value).translate(_DIGIT_TRANSLATION).strip()
-        # حذف انواع فاصله‌ها و علائم قالب‌بندی رایج
         normalized = re.sub(r"[\s\u200c\u200f\-_()]+", "", normalized)
         return normalized
 

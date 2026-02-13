@@ -1,4 +1,4 @@
-# app/services/auth_service.py
+
 import logging
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -21,13 +21,7 @@ from app.core.validators import normalize_digits
 logger = logging.getLogger(__name__)
 
 def register_user(db: Session, data: RegisterRequest):
-    """
-    ثبت کاربر جدید در سیستم.
 
-    Args:
-        db: Session دیتابیس
-        data: اطلاعات ثبت نام (RegisterRequest)
-    """
 
     student_number = normalize_digits(data.student_number)
     national_code = normalize_digits(data.national_code)
@@ -77,11 +71,9 @@ def register_user(db: Session, data: RegisterRequest):
         )
 
     try:
-        # پیدا کردن نقش کاربر عادی
         role = db.query(Role).filter(Role.name == "user").first()
 
         if not role:
-            # اگر نقش user وجود ندارد، آن را ایجاد کنید
             role = Role(name="user", description="کاربر عادی")
             db.add(role)
             db.flush()
@@ -90,7 +82,6 @@ def register_user(db: Session, data: RegisterRequest):
         hashed_password = hash_password(student_number)
 
 
-        # ایجاد کاربر
         user = User(
             student_number=student_number,
             hashed_password=hashed_password,
@@ -100,7 +91,6 @@ def register_user(db: Session, data: RegisterRequest):
         db.add(user)
         db.flush()
 
-            # ایجاد پروفایل دانشجویی
         profile = StudentProfile(
             user_id=user.id,
             first_name=data.first_name,
@@ -151,12 +141,7 @@ def register_user(db: Session, data: RegisterRequest):
 
 
 def authenticate_user(db: Session, national_code: str, password: str):
-    """
-    احراز هویت کاربر با کد ملی و شماره دانشجویی (به‌عنوان رمز عبور).
 
-    به‌جای first() روی نتیجهٔ join، همهٔ ردیف‌های منطبق با کد ملی بررسی می‌شوند
-    تا اگر داده‌های قدیمی/ناسازگار باعث تکرار کد ملی شده باشند، کاربر معتبر از دست نرود.
-    """
     normalized_national_code = normalize_digits(national_code)
     normalized_password = normalize_digits(password)
 
@@ -177,7 +162,6 @@ def authenticate_user(db: Session, national_code: str, password: str):
             detail="خطا در بازیابی اطلاعات ورود. لطفاً دوباره تلاش کنید.",
         ) from exc
 
-    # بررسی وجود کاربر و صحت رمز عبور (که در اینجا باید برابر با شماره دانشجویی باشد)
     logger.info(
         "Login attempt: national_code=%s matched_users=%s",
         normalized_national_code,
@@ -207,12 +191,7 @@ def authenticate_user(db: Session, national_code: str, password: str):
 
 
 def authenticate_admin_password(db: Session, password: str):
-    """
-    احراز هویت ادمین فقط با رمز عبور.
 
-    این تابع برای endpoint ورود پنل ادمین استفاده می‌شود و با bcrypt
-    مقدار ورودی را با هش ذخیره‌شده مقایسه می‌کند.
-    """
     normalized_password = password.strip()
 
     admin_users = (
@@ -265,7 +244,6 @@ def enforce_single_national_id_authentication(db: Session, user: User) -> None:
 
 
 def create_token_for_user(user: User):
-    """ ایجاد توکن JWT برای کاربر. Args: user: شیء کاربر Returns: dict: توکن دسترسی """
     national_code = user.profile.national_code if getattr(user, "profile", None) else None
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

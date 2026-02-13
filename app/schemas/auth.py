@@ -7,12 +7,10 @@ from app.core.validators import (
     validate_student_number,
 )
 
-# Enum برای جنسیت
 class GenderEnum(str, Enum):
     sister = "sister"
     brother = "brother"
 
-# Schema برای درخواست ثبت نام
 class RegisterRequest(BaseModel):
     first_name: str = Field(..., description="نام", min_length=2, max_length=50)
     last_name: str = Field(..., description="نام خانوادگی", min_length=2, max_length=50)
@@ -48,7 +46,6 @@ class RegisterRequest(BaseModel):
         }
 
 
-# Schema برای درخواست ورود
 class LoginRequest(BaseModel):
     national_code: str = Field(..., description="کد ملی ۱۰ رقمی")
     student_number: str = Field(..., description="شماره دانشجویی ۹ رقمی")
@@ -72,7 +69,6 @@ class LoginRequest(BaseModel):
 class AdminLoginRequest(BaseModel):
     password: str = Field(..., description="رمز عبور مدیر", min_length=1)
 
-# Schema برای پاسخ توکن
 class Token(BaseModel):
     access_token: str = Field(..., description="توکن دسترسی JWT")
     token_type: str = Field(default="bearer", description="نوع توکن")
@@ -87,7 +83,6 @@ class Token(BaseModel):
             }
         }
 
-# Schema برای پاسخ ثبت نام
 class RegisterResponse(BaseModel):
     message: str = Field(..., description="پیام پاسخ")
     user_id: int = Field(..., description="شناسه کاربر ایجاد شده")

@@ -1,8 +1,6 @@
-# scripts/create_roles.py
 import sys
 import os
 
-# اضافه کردن مسیر پروژه به sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
@@ -12,17 +10,14 @@ from app.models.role import Role
 
 
 def create_default_roles():
-    """ایجاد نقش‌های پیش‌فرض سیستم."""
     print("=" * 50)
     print("📝 ایجاد نقش‌های پیش‌فرض سیستم بسیج")
     print("=" * 50)
 
-    # ایجاد دیتابیس
     create_database()
 
     db = SessionLocal()
 
-    # نقش‌های پیش‌فرض
     default_roles = [
         {
             "name": "user",

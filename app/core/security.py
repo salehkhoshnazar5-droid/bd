@@ -11,12 +11,11 @@ from app.core.deps import DBDep
 from app.models.user import User
 from app.core.confing import settings
 
-# تنظیمات
-SECRET_KEY = settings.secret_key  # در production تغییر دهید
+
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 MAX_BCRYPT_PASSWORD_BYTES = 72
-# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
@@ -25,7 +24,6 @@ if SECRET_KEY == "CHANGE_THIS_SECRET_KEY":
         "SECRET_KEY is using the default value; set SECRET_KEY in production."
     )
 
-# Exception
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="توکن نامعتبر یا منقضی شده است",
@@ -34,13 +32,11 @@ credentials_exception = HTTPException(
 
 
 def hash_password(password: str) -> str:
-    """هش کردن رمز عبور."""
     safe_password = normalize_password(password)
     return bcrypt.hashpw(safe_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """تأیید رمز عبور."""
     try:
         safe_password = normalize_password(plain_password)
     except ValueError:
@@ -65,7 +61,6 @@ def normalize_password(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """ساخت توکن JWT."""
     to_encode = data.copy()
 
     if expires_delta:
@@ -83,9 +78,6 @@ def get_current_user(
         db: Session = DBDep()
 
 ) -> User:
-    """
-    اعتبارسنجی توکن JWT و برگرداندن کاربر.
-    """
     raw_token = token or request.cookies.get("admin_access_token") or request.cookies.get("access_token")
     if not raw_token:
         raise credentials_exception
@@ -108,7 +100,7 @@ def get_current_user(
         payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
 
         student_number: str = payload.get("sub")
-        national_code: str = payload.get("national_code")  # اضافه کردن کد ملی به payload
+        payload.get("national_code")
 
         if student_number is None:
             raise credentials_exception
@@ -127,9 +119,6 @@ def get_current_user(
 def get_current_admin(
         current_user: User = Depends(get_current_user),
 ):
-    """
-    Dependency برای اطمینان از admin بودن کاربر
-    """
     if  not current_user.role or current_user.role.name != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

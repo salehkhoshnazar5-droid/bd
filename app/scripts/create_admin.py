@@ -1,4 +1,3 @@
-# scripts/create_admin.py
 import sys
 import os
 
@@ -12,24 +11,20 @@ from app.core.security import hash_password
 
 
 def create_admin_user():
-    """ایجاد کاربر ادمین برای تست."""
     db = SessionLocal()
 
-    # پیدا کردن نقش ادمین
     admin_role = db.query(Role).filter(Role.name == "admin").first()
 
     if not admin_role:
         print("❌ نقش admin وجود ندارد. اول roles را ایجاد کنید.")
         return
 
-    # بررسی وجود کاربر ادمین
     admin_user = db.query(User).filter(User.student_number == "00000000").first()
 
     if admin_user:
         print("ℹ️ کاربر ادمین از قبل وجود دارد")
         return admin_user
 
-    # ایجاد کاربر ادمین
     admin_user = User(
         student_number="00000000",
         hashed_password=hash_password("admin123"),
@@ -40,7 +35,6 @@ def create_admin_user():
     db.commit()
     db.refresh(admin_user)
 
-    # ایجاد پروفایل
     profile = StudentProfile(
         user_id=admin_user.id,
         national_code="0000000000",

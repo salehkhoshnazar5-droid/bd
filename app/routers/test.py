@@ -1,13 +1,11 @@
-# app/routers/test.py - اصلاح شده
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
 from app.core.deps import DBDep, CurrentUser, AdminDep
 from app.models.user import User
 from app.models.role import Role
 from app.models.student_profile import StudentProfile
 from app.schemas.user import UserOut
-from app.schemas.auth import Token
+
 
 router = APIRouter(
     prefix="/test",
@@ -45,9 +43,6 @@ async def test_root():
     description="تست سلامت سیستم احراز هویت"
 )
 async def test_auth():
-    """
-    تست سلامت سیستم احراز هویت.
-    """
     return {
         "auth_system": "JWT Token Based",
         "status": "active",
@@ -76,16 +71,11 @@ async def test_auth():
     description="تست اتصال و سلامت دیتابیس"
 )
 async def test_database(db: Session = DBDep()):  # ✅ اصلاح شده
-    """
-    تست اتصال به دیتابیس و شمارش رکوردها.
-    """
     try:
-        # شمارش رکوردها
         user_count = db.query(User).count()
         role_count = db.query(Role).count()
         profile_count = db.query(StudentProfile).count()
 
-        # تست query ساده
         latest_user = db.query(User).order_by(User.created_at.desc()).first()
 
         return {
@@ -100,7 +90,7 @@ async def test_database(db: Session = DBDep()):  # ✅ اصلاح شده
                 "student_number": latest_user.student_number if latest_user else None,
                 "created_at": latest_user.created_at.isoformat() if latest_user and latest_user.created_at else None
             },
-            "timestamp": "now"  # می‌توانید datetime.now() استفاده کنید
+            "timestamp": "now"
         }
     except Exception as e:
         raise HTTPException(
@@ -115,12 +105,8 @@ async def test_database(db: Session = DBDep()):  # ✅ اصلاح شده
     summary="تست کاربر جاری",
     description="تست endpoint محافظت شده با توکن"
 )
-async def test_me(current_user: User = CurrentUser()):  # ✅ اصلاح شده
-    """
-    تست دریافت اطلاعات کاربر جاری.
+async def test_me(current_user: User = CurrentUser()):
 
-    نیاز به توکن JWT معتبر دارد.
-    """
     return {
         "id": current_user.id,
         "student_number": current_user.student_number,
@@ -136,10 +122,8 @@ async def test_me(current_user: User = CurrentUser()):  # ✅ اصلاح شده
     summary="تست دسترسی ادمین",
     description="تست endpoint فقط برای ادمین‌ها"
 )
-async def test_admin_only(admin_user: User = AdminDep()):  # ✅ اصلاح شده
-    """
-    فقط کاربران با نقش admin می‌توانند به این endpoint دسترسی داشته باشند.
-    """
+async def test_admin_only(admin_user: User = AdminDep()):
+
     return {
         "message": "شما ادمین هستید! 🔐",
         "user": {
@@ -162,19 +146,11 @@ async def test_admin_only(admin_user: User = AdminDep()):  # ✅ اصلاح شد
     description="نمایش لیست کاربران (برای تست)"
 )
 async def list_users(
-    db: Session = DBDep(),  # ✅ اصلاح شده
-    current_user: User = CurrentUser(),  # ✅ اصلاح شده
+    db: Session = DBDep(),
+    current_user: User = CurrentUser(),
     limit: int = 10,
     offset: int = 0
 ):
-    """
-    نمایش لیست کاربران (برای اهداف تست).
-
-    پارامترها:
-    - limit: تعداد رکوردها در هر صفحه
-    - offset: تعداد رکوردهایی که باید رد شوند
-    """
-    # فقط ادمین‌ها یا کاربران خاص می‌توانند لیست کاربران را ببینند
     if not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -192,8 +168,6 @@ async def list_users(
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None
         }
-
-        # اضافه کردن اطلاعات پروفایل اگر وجود دارد
         if user.profile:
             user_data["profile"] = {
                 "national_code": user.profile.national_code,
@@ -218,10 +192,8 @@ async def list_users(
     summary="لیست نقش‌ها (تست)",
     description="نمایش لیست نقش‌های سیستم"
 )
-async def list_roles(db: Session = DBDep()):  # ✅ اصلاح شده
-    """
-    نمایش لیست نقش‌های موجود در سیستم.
-    """
+async def list_roles(db: Session = DBDep()):
+
     roles = db.query(Role).all()
 
     role_list = []
@@ -255,15 +227,10 @@ async def list_roles(db: Session = DBDep()):  # ✅ اصلاح شده
 )
 async def get_user_profile(
     user_id: int,
-    db: Session = DBDep(),  # ✅ اصلاح شده
-    current_user: User = CurrentUser()  # ✅ اصلاح شده
+    db: Session = DBDep(),
+    current_user: User = CurrentUser()
 ):
-    """
-    دریافت پروفایل کاربر.
 
-    کاربران فقط می‌توانند پروفایل خودشان را ببینند
-    مگر اینکه ادمین باشند.
-    """
     if current_user.id != user_id and not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -305,19 +272,12 @@ async def get_user_profile(
     description="ایجاد یک کاربر تستی برای آزمایش"
 )
 async def create_test_user(
-    db: Session = DBDep(),  # ✅ اصلاح شده
-    current_user: User = AdminDep(),  # ✅ اصلاح شده
+    db: Session = DBDep(),
     student_number: str = "test12345",
     role_name: str = "user"
 ):
-    """
-    ایجاد یک کاربر تستی.
-
-    فقط برای اهداف توسعه و تست.
-    """
     from app.core.security import hash_password
 
-    # بررسی وجود نقش
     role = db.query(Role).filter(Role.name == role_name).first()
     if not role:
         raise HTTPException(
@@ -325,7 +285,6 @@ async def create_test_user(
             detail=f"نقش '{role_name}' وجود ندارد"
         )
 
-    # بررسی وجود کاربر با این شماره دانشجویی
     existing_user = db.query(User).filter(User.student_number == student_number).first()
     if existing_user:
         raise HTTPException(
@@ -333,10 +292,9 @@ async def create_test_user(
             detail="کاربر با این شماره دانشجویی از قبل وجود دارد"
         )
 
-    # ایجاد کاربر
     user = User(
         student_number=student_number,
-        hashed_password=hash_password(student_number),  # رمز = شماره دانشجویی
+        hashed_password=hash_password(student_number),
         role_id=role.id
     )
 
@@ -350,7 +308,7 @@ async def create_test_user(
             "id": user.id,
             "student_number": user.student_number,
             "role": role.name,
-            "password": student_number,  # فقط برای نمایش در تست
+            "password": student_number,
             "note": "رمز عبور برابر با شماره دانشجویی است"
         }
     }
@@ -361,23 +319,14 @@ async def create_test_user(
     summary="سلامت سیستم",
     description="چک سلامت کامل سیستم"
 )
-async def health_check(db: Session = DBDep()):  # ✅ اصلاح شده
-    """
-    بررسی سلامت کامل سیستم.
-
-    موارد بررسی:
-    1. اتصال به دیتابیس
-    2. وجود جداول ضروری
-    3. وجود نقش‌های پایه
-    """
+async def health_check(db: Session = DBDep()):
     health_status = {
         "status": "healthy",
-        "timestamp": "now",  # datetime.now().isoformat()
+        "timestamp": "now",
         "checks": []
     }
 
     try:
-        # ۱. چک دیتابیس
         db.execute("SELECT 1")
         health_status["checks"].append({
             "name": "database",
@@ -392,7 +341,6 @@ async def health_check(db: Session = DBDep()):  # ✅ اصلاح شده
             "message": f"خطا در اتصال به دیتابیس: {str(e)}"
         })
 
-    # ۲. چک جداول
     tables = ["users", "roles", "student_profiles"]
     for table in tables:
         try:
@@ -410,7 +358,6 @@ async def health_check(db: Session = DBDep()):  # ✅ اصلاح شده
                 "message": f"جدول {table} وجود ندارد یا مشکل دارد"
             })
 
-    # ۳. چک نقش‌های ضروری
     essential_roles = ["user", "admin"]
     for role_name in essential_roles:
         role = db.query(Role).filter(Role.name == role_name).first()

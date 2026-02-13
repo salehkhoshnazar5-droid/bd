@@ -15,10 +15,6 @@ def read_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    مشاهده پروفایل دانشجویی کاربر جاری.
-    اطلاعات کاربر بر اساس شماره دانشجویی و کد ملی ارائه می‌شود.
-    """
     return student_service.get_my_profile(db, current_user)
 
 
@@ -28,8 +24,4 @@ def update_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    به‌روزرسانی پروفایل دانشجویی کاربر جاری.
-    اطلاعات پروفایل از شماره دانشجویی و کد ملی گرفته می‌شود.
-    """
     return student_service.update_my_profile(db, current_user, data)

@@ -15,7 +15,6 @@ class AdminLoginRequest(BaseModel):
 
 
 async def _extract_login_payload(request: Request) -> dict[str, Any]:
-    """Extract login payload from JSON or form submissions."""
     content_type = request.headers.get("content-type", "").lower()
 
     if "application/json" in content_type:
@@ -26,7 +25,6 @@ async def _extract_login_payload(request: Request) -> dict[str, Any]:
         form_data = await request.form()
         return {"password": form_data.get("password")}
 
-    # Fallback: attempt form first (common browser case), then JSON
     try:
         form_data = await request.form()
         if form_data:

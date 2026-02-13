@@ -7,9 +7,7 @@ from app.schemas.student import StudentProfileOut, StudentProfileUpdate
 
 
 def get_my_profile(db: Session, current_user: User) -> StudentProfileOut:
-    """
-    دریافت پروفایل دانشجویی کاربر جاری.
-    """
+
     profile = (
         db.query(StudentProfile)
         .filter(StudentProfile.user_id == current_user.id)
@@ -27,9 +25,7 @@ def update_my_profile(
     current_user: User,
     data: StudentProfileUpdate
 ) -> StudentProfileOut:
-    """
-    بروزرسانی پروفایل دانشجویی کاربر جاری.
-    """
+
     profile = (
         db.query(StudentProfile)
         .filter(StudentProfile.user_id == current_user.id)

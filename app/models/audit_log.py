@@ -9,7 +9,6 @@ class AuditLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # ارتباط با کاربران
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     action = Column(String(50), nullable=False, comment="عملیاتی که در سیستم انجام شده")
     entity = Column(String(50), nullable=True, comment="موجودیت (entity) که تغییر کرده")
@@ -18,9 +17,7 @@ class AuditLog(Base):
     description = Column(String(255), nullable=True, comment="توضیحات مربوط به عملیات")
     ip_address = Column(String(45), nullable=True, comment="آدرس IP کاربر که عملیات را انجام داده")
     created_at = Column(DateTime, default=datetime.now(timezone.utc), comment="زمان ایجاد لاگ")
-
-    # ارتباط با مدل User
-    user = relationship("User", back_populates="audit_logs")  # اگر در مدل User از back_populates استفاده شده باشد
+    user = relationship("User", back_populates="audit_logs")
 
     def __repr__(self):
         return f"<AuditLog(id={self.id}, action={self.action}, created_at={self.created_at})>"

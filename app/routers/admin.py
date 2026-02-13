@@ -4,7 +4,7 @@ from app.core.deps import get_db
 from app.core.security import get_current_admin
 from app.schemas.student import StudentProfileOut, AdminStudentUpdate
 from app.services import user_service
-from app.models.user import User
+
 
 router = APIRouter(
     prefix="/admin",

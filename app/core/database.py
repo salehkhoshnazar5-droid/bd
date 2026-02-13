@@ -3,30 +3,28 @@ import logging
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.confing import settings
-# تنظیمات دیتابیس
-DATABASE_URL = settings.database_url # تغییر نام فایل برای مشخص‌تر بودن
 
-# ایجاد engine
+DATABASE_URL = settings.database_url
+
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},  # برای SQLite ضروری است
-    echo=settings.sql_echo,  # اضافه کردن echo برای دیباگ - در production غیرفعال کنید
+    connect_args={"check_same_thread": False},
+    echo=settings.sql_echo,
 )
 
-# ایجاد session factory
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
-# Base class برای مدل‌ها
+
 Base = declarative_base()
 
 
-# تابع کمکی برای ایجاد دیتابیس
+
 def ensure_student_profiles_schema():
-    """اطمینان از همگام بودن ستون‌های جدول student_profiles با مدل."""
     inspector = inspect(engine)
     if "student_profiles" not in inspector.get_table_names():
         return
@@ -60,15 +58,12 @@ def ensure_student_profiles_schema():
 
 
 def create_database():
-    """ایجاد همه جداول در دیتابیس"""
     Base.metadata.create_all(bind=engine)
     ensure_student_profiles_schema()
     logging.getLogger(__name__).info("✅ دیتابیس در %s ایجاد شد", DATABASE_URL)
 
 
-# تابع کمکی برای دیدن جداول ایجاد شده
 def show_tables():
-    """نمایش جداول ایجاد شده در دیتابیس"""
     from sqlalchemy import inspect
 
     inspector = inspect(engine)

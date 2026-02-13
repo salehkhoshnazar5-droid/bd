@@ -19,13 +19,10 @@ from app.core.deps import DBDep
 from app.schemas.auth import RegisterRequest, GenderEnum
 from app.services.auth_service import register_user, enforce_single_national_id_authentication, authenticate_user
 from app.core.security import create_access_token
-from app.models.user import User
 from app.core.confing import settings
 from app.core.validators import validate_national_code
 import logging
-# ----------------------------
-# Router & Templates
-# ----------------------------
+
 router = APIRouter(
     prefix="/ui-auth",
     tags=["UI Authentication"]
@@ -34,9 +31,6 @@ router = APIRouter(
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
-# ----------------------------
-# Home Page
-# ----------------------------
 @router.get("/", response_class=HTMLResponse)
 async def home_page(request: Request):
     return templates.TemplateResponse(
@@ -49,9 +43,6 @@ async def home_page(request: Request):
     )
 
 
-# ----------------------------
-# Register (GET)
-# ----------------------------
 @router.get("/register", response_class=HTMLResponse)
 async def show_register_page(
     request: Request,
@@ -73,9 +64,6 @@ async def show_register_page(
     )
 
 
-# ----------------------------
-# Register (POST)
-# ----------------------------
 @router.post("/register", response_class=HTMLResponse)
 async def submit_register(
     request: Request,
@@ -89,7 +77,6 @@ async def submit_register(
     db: Session = DBDep()
 ):
     try:
-        # تبدیل gender به Enum
         gender_enum = GenderEnum(gender)
 
         register_data = RegisterRequest(
@@ -120,7 +107,6 @@ async def submit_register(
         error_message = " ".join(validation_messages) or "اطلاعات ثبت‌نام نامعتبر است."
 
     except ValueError:
-        # خطای enum جنسیت
         error_message = "جنسیت انتخاب‌شده معتبر نیست."
 
     except HTTPException as e:
@@ -150,9 +136,6 @@ async def submit_register(
     )
 
 
-# ----------------------------
-# Login (GET)
-# ----------------------------
 @router.get("/login", response_class=HTMLResponse)
 async def show_login_page(
     request: Request,
@@ -173,14 +156,11 @@ async def show_login_page(
     )
 
 
-# ----------------------------
-# Login (POST)
-# ----------------------------
 @router.post("/login", response_class=HTMLResponse)
 async def submit_login(
     request: Request,
-    national_code: str = Form(...),  # کد ملی
-    password: str = Form(...),  # شماره دانشجویی
+    national_code: str = Form(...),
+    password: str = Form(...),
     remember_me: Optional[str] = Form(None),
     redirect_url: Optional[str] = Form(None),
     db: Session = DBDep()
@@ -297,9 +277,6 @@ async def submit_login(
     return response
 
 
-# ----------------------------
-# Logout
-# ----------------------------
 @router.get("/logout")
 async def logout_user():
     response = RedirectResponse(
@@ -310,13 +287,9 @@ async def logout_user():
     return response
 
 
-# ----------------------------
-# Dashboard
-# ----------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
 async def user_dashboard(
-    request: Request,
-    db: Session = DBDep()
+    request: Request
 ):
     token = request.cookies.get("access_token")
 

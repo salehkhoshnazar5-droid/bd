@@ -1,4 +1,3 @@
-# app/routers/auth.py
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -36,16 +35,15 @@ router = APIRouter(
     }
 )
 async def register(
-        data: RegisterRequest,  # اطلاعات ثبت نام شامل شماره دانشجویی و کد ملی
-        db: Session = DBDep()  # دسترسی به دیتابیس
+        data: RegisterRequest,
+        db: Session = DBDep()
 ):
-    # ثبت‌نام کاربر با استفاده از اطلاعات شماره دانشجویی و کد ملی
     user = register_user(db=db, data=data)
     return {
         "message": "ثبت‌نام با موفقیت انجام شد",
         "user_id": user.id,
         "student_number": user.student_number,
-        "role": user.role.name  # نقش کاربر
+        "role": user.role.name
     }
 
 
@@ -55,10 +53,9 @@ async def register(
     summary="ورود و دریافت توکن"
 )
 async def login(
-        form_data: OAuth2PasswordRequestForm = Depends(), # داده‌های ورود شامل شماره دانشجویی و کد ملی
-        db: Session = DBDep()  # دسترسی به دیتابیس
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: Session = DBDep()
 ):
-    """ورود به سیستم و دریافت توکن JWT."""
     try:
         national_code = validate_national_code(form_data.username)
         password = form_data.password
@@ -67,12 +64,10 @@ async def login(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail = str(exc)
         ) from exc
-    # احراز هویت کاربر با استفاده از شماره دانشجویی و رمز عبور برابر با شماره دانشجویی
     user = authenticate_user(
         db,
         national_code=national_code,
         password=password
-        # رمز عبور برابر با شماره دانشجویی است
     )
 
     if not user:
@@ -100,12 +95,10 @@ async def login(
 async def get_me(
         current_user: User = CurrentUser()
 ):
-    """دریافت اطلاعات کاربر فعلی."""
     return current_user
 
 @router.get("/check/{student_number}")
 async def check_student_number(student_number: str, db: Session = Depends(get_db)):
-    """بررسی موجودیت شماره دانشجویی"""
     existing_user = db.query(User).filter(User.student_number == student_number).first()
     return {"available": existing_user is None}
 

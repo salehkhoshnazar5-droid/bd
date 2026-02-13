@@ -2,13 +2,12 @@ from fastapi import Request
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from app.models.audit_log import AuditLog
 from app.models.user import User
 
 
-# ۱. ایجاد لاگ
 def create_audit_log(
         db: Session,
         action: str,
@@ -18,7 +17,6 @@ def create_audit_log(
         entity_id: int | None = None,
         description: str | None = None,
 ):
-    """ایجاد یک لاگ جدید"""
     log = AuditLog(
         user_id=user.id if user else None,
         action=action,
@@ -31,9 +29,7 @@ def create_audit_log(
     db.commit()
 
 
-# ۲. آمار ساده
 def get_simple_audit_stats(db: Session) -> Dict:
-    """آمار ساده لاگ‌ها"""
     total_logs = db.query(AuditLog).count()
 
     actions = (
@@ -52,7 +48,6 @@ def get_simple_audit_stats(db: Session) -> Dict:
     }
 
 
-# ۳. لیست لاگ‌ها با تاریخ و ساعت
 def get_audit_logs(
         db: Session,
         skip: int = 0,
@@ -62,21 +57,9 @@ def get_audit_logs(
         action: Optional[str] = None,
         user_id: Optional[int] = None,
 ) -> Dict:
-    """
-    دریافت لیست لاگ‌ها با تاریخ و ساعت
 
-    Returns:
-        {
-            "logs": List[AuditLog],  # لیست لاگ‌ها
-            "total": int,            # تعداد کل لاگ‌ها
-            "skip": int,             # تعداد رد شده
-            "limit": int,            # تعداد نمایش داده شده
-            "has_more": bool         # آیا لاگ بیشتری وجود دارد؟
-        }
-    """
     query = db.query(AuditLog)
 
-    # فیلترها
     if date_from:
         query = query.filter(AuditLog.created_at >= date_from)
     if date_to:
@@ -86,10 +69,8 @@ def get_audit_logs(
     if user_id:
         query = query.filter(AuditLog.user_id == user_id)
 
-    # تعداد کل
     total = query.count()
 
-    # دریافت لاگ‌ها با مرتب‌سازی بر اساس تاریخ و ساعت (جدیدترین اول)
     logs = (
         query
         .order_by(AuditLog.created_at.desc())

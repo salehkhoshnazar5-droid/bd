@@ -28,7 +28,6 @@ def export_audit_logs_csv(
     if unauthorized:
         return unauthorized
 
-    # فیلتر کردن لاگ‌ها بر اساس پارامترها
     query = db.query(AuditLog)
     if user_id:
         query = query.filter(AuditLog.user_id == user_id)
@@ -41,16 +40,13 @@ def export_audit_logs_csv(
 
     logs = query.order_by(AuditLog.created_at.desc()).all()
 
-    # تولید فایل CSV
     output = StringIO()
     writer = csv.writer(output)
 
-    # اضافه کردن سرآیندهای جدید به CSV
     writer.writerow([
         "ID", "User ID", "Action", "Entity", "Entity ID", "Description", "IP Address", "Created At",
     ])
 
-    # نوشتن لاگ‌ها در CSV
     for log in logs:
         writer.writerow([
             log.id,
@@ -85,7 +81,6 @@ def export_audit_logs_excel(
     if unauthorized:
         return unauthorized
 
-    # فیلتر کردن لاگ‌ها
     query = db.query(AuditLog)
     if user_id:
         query = query.filter(AuditLog.user_id == user_id)
@@ -106,7 +101,6 @@ def export_audit_logs_excel(
     except ImportError as exc:
         raise HTTPException(status_code=500, detail="کتابخانه openpyxl نصب نشده است") from exc
 
-    # تولید فایل Excel
     try:
         from openpyxl import Workbook
     except ModuleNotFoundError as exc:
@@ -119,12 +113,10 @@ def export_audit_logs_excel(
     ws = wb.active
     ws.title = "Audit Logs"
 
-    # اضافه کردن سرآیندها در Excel
     ws.append([
         "ID", "User ID", "Action", "Entity", "Entity ID", "Description", "IP Address", "Created At",
     ])
 
-    # نوشتن لاگ‌ها در Excel
     for log in logs:
         ws.append([
             log.id,

@@ -14,9 +14,7 @@ def _check_uniqueness(
     student_number: str,
     exclude_user_id: int,
 ):
-    """
-    بررسی یکتایی کد ملی و شماره دانشجویی برای جلوگیری از تکرار.
-    """
+
     conflict = (
         db.query(StudentProfile)
         .filter(
@@ -45,9 +43,7 @@ def _check_uniqueness(
 
 
 def get_my_profile(db: Session, user: User) -> StudentProfile:
-    """
-    دریافت پروفایل کاربر فعلی.
-    """
+
     profile = (
         db.query(StudentProfile)
         .filter(StudentProfile.user_id == user.id)
@@ -63,12 +59,8 @@ def update_my_profile(
     user: User,
     data: StudentProfileUpdate,
 ) -> StudentProfile:
-    """
-    به‌روزرسانی پروفایل توسط خود کاربر.
-    """
-    profile = get_my_profile(db, user)
 
-    # بررسی یکتایی شماره دانشجویی و کد ملی
+    profile = get_my_profile(db, user)
     national_code = data.national_code if data.national_code is not None else profile.national_code
     _check_uniqueness(
         db,
@@ -77,7 +69,6 @@ def update_my_profile(
         user.id,
     )
 
-    # به‌روزرسانی اطلاعات پروفایل
     for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
 
@@ -86,12 +77,8 @@ def update_my_profile(
     return profile
 
 
-# ---------------- ADMIN ----------------
 
 def get_all_students(db: Session):
-    """
-    دریافت تمام پروفایل‌های دانشجویی برای ادمین.
-    """
     return db.query(StudentProfile).order_by(StudentProfile.student_number.asc()).all()
 
 
@@ -103,9 +90,7 @@ def get_students_paginated(db: Session, *, skip: int = 0, limit: int = 50):
 
 
 def get_student_by_id(db: Session, student_id: int) -> StudentProfile:
-    """
-    دریافت پروفایل یک دانشجو با شناسه یکتا.
-    """
+
     profile = (
         db.query(StudentProfile)
         .filter(StudentProfile.id == student_id)
@@ -121,12 +106,9 @@ def admin_update_student(
     student_id: int,
     data: AdminStudentUpdate,
 ) -> StudentProfile:
-    """
-    به‌روزرسانی پروفایل دانشجویی توسط ادمین.
-    """
+
     profile = get_student_by_id(db, student_id)
 
-    # بررسی یکتایی شماره دانشجویی و کد ملی
     _check_uniqueness(
         db,
         data.national_code,
@@ -134,7 +116,6 @@ def admin_update_student(
         profile.user_id,
     )
 
-    # به‌روزرسانی اطلاعات پروفایل توسط ادمین
     for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
     if profile.user:

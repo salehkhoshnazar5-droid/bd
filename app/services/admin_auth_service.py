@@ -10,14 +10,34 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 
 MAX_ADMIN_LOGIN_ATTEMPTS = int(os.getenv("ADMIN_MAX_LOGIN_ATTEMPTS", "5"))
 ADMIN_LOCKOUT_MINUTES = int(os.getenv("ADMIN_LOCKOUT_MINUTES", "15"))
+logger = logging.getLogger(__name__)
 
-_ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH") or hash_password(
-    os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123456")
-)
+def _looks_like_bcrypt_hash(value: str) -> bool:
+    return value.startswith(("$2a$", "$2b$", "$2y$")) and len(value) >= 60
+
+
+def _resolve_admin_password_hash() -> str:
+    configured_hash = os.getenv("ADMIN_PASSWORD_HASH")
+    if configured_hash:
+        if _looks_like_bcrypt_hash(configured_hash):
+            logger.debug("Using ADMIN_PASSWORD_HASH from environment for admin auth.")
+            return configured_hash
+
+        logger.warning(
+            "ADMIN_PASSWORD_HASH is set but does not look like a bcrypt hash; "
+            "treating it as plain password and hashing once at startup."
+        )
+        return hash_password(configured_hash)
+
+    fallback_password = os.getenv("ADMIN_LOGIN_PASSWORD") or os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123456")
+    logger.debug("ADMIN_PASSWORD_HASH not set; deriving hash from ADMIN_LOGIN_PASSWORD/ADMIN_DEFAULT_PASSWORD.")
+    return hash_password(fallback_password)
+
+
+_ADMIN_PASSWORD_HASH = _resolve_admin_password_hash()
 
 _failed_attempts: Dict[str, Dict[str, datetime | int]] = {}
 _attempts_lock = Lock()
-logger = logging.getLogger(__name__)
 
 
 def get_client_identifier(request: Request) -> str:
@@ -60,7 +80,17 @@ def authenticate_admin_password(request: Request, password: str) -> tuple[bool, 
         if locked:
             return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
 
-        if verify_password(password, _ADMIN_PASSWORD_HASH):
+        password_matches = verify_password(normalized_password, _ADMIN_PASSWORD_HASH)
+        logger.debug(
+            "Admin password verification result=%s client=%s raw_len=%d normalized_len=%d hash_prefix=%s",
+            password_matches,
+            get_client_identifier(request),
+            len(password),
+            len(normalized_password),
+            _ADMIN_PASSWORD_HASH[:7],
+        )
+
+        if password_matches:
             clear_failed_attempts(request)
             return True, None
 

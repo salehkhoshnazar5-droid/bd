@@ -1,4 +1,3 @@
-# scripts/test_user_model.py
 import sys
 import os
 
@@ -12,16 +11,13 @@ from app.core.security import hash_password
 
 
 def test_user_model():
-    """تست مدل User."""
     print("🧪 تست مدل User...")
 
-    # ایجاد دیتابیس
     create_database()
 
     db = SessionLocal()
 
     try:
-        # ایجاد نقش‌های تست
         user_role = Role(name="user", description="کاربر تست")
         admin_role = Role(name="admin", description="ادمین تست")
 
@@ -29,7 +25,6 @@ def test_user_model():
         db.add(admin_role)
         db.commit()
 
-        # ۱. تست ایجاد کاربر
         user1 = User(
             student_number="12345678",
             hashed_password=hash_password("12345678"),
@@ -43,7 +38,6 @@ def test_user_model():
         print(f"✅ کاربر ایجاد شد: {user1}")
         print(f"   to_dict(): {user1.to_dict()}")
 
-        # ۲. تست ایجاد پروفایل
         profile1 = StudentProfile(
             user_id=user1.id,
             national_code="0012345678",
@@ -55,13 +49,11 @@ def test_user_model():
         db.add(profile1)
         db.commit()
 
-        # ۳. تست propertyها
         print(f"\n🧪 تست propertyها:")
         print(f"   is_admin: {user1.is_admin}")
         print(f"   can('read'): {user1.can('read')}")
         print(f"   can('delete'): {user1.can('delete')}")
 
-        # ۴. تست متد کلاس
         print(f"\n🧪 تست create_simple_user:")
         user2 = User.create_simple_user(
             student_number="87654321",
@@ -71,7 +63,6 @@ def test_user_model():
         )
         print(f"   کاربر ایجاد شد: {user2}")
 
-        # ۵. تست query
         print(f"\n🧪 تست query:")
         users = db.query(User).all()
         print(f"   تعداد کاربران: {len(users)}")

@@ -1,4 +1,3 @@
-# scripts/test_endpoints.py
 import requests
 import json
 
@@ -6,27 +5,20 @@ BASE_URL = "http://localhost:8000"
 
 
 def test_all_endpoints():
-    """تست تمام endpoints."""
-
     print("🧪 تست تمام endpoints سیستم")
     print("=" * 60)
-
-    # ۱. تست سلامت عمومی
     response = requests.get(f"{BASE_URL}/api/info")
     print(f"   GET /api/info - Status: {response.status_code}")
     if response.ok:
         print(f"   Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
-    # ۲. تست endpoints تست
-    print("\n2. تست endpoints تست:")
+        print("\n2. تست endpoints تست:")
     endpoints = ["/test", "/test/auth", "/test/db", "/test/health"]
 
     for endpoint in endpoints:
         response = requests.get(f"{BASE_URL}{endpoint}")
         print(f"   GET {endpoint} - Status: {response.status_code}")
-
-    # ۳. تست auth برای دریافت توکن
     print("\n3. دریافت توکن برای تست endpoints محافظت شده:")
-    login_data = {"username": "00000000", "password": "admin123"}  # ادمین پیش‌فرض
+    login_data = {"username": "00000000", "password": "admin123"}
 
     response = requests.post(
         f"{BASE_URL}/auth/login",
@@ -37,8 +29,6 @@ def test_all_endpoints():
         token = response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         print(f"   ✅ توکن دریافت شد")
-
-        # ۴. تست endpoints محافظت شده
         print("\n4. تست endpoints محافظت شده:")
         protected_endpoints = [
             "/test/me",
