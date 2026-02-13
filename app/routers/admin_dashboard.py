@@ -12,7 +12,6 @@ from app.core.confing import settings
 
 from app.core.deps import get_db
 from app.models.user import User
-from app.routers.admin_ui import get_current_admin_from_cookie
 from app.core.security import get_current_admin
 from app.services.audit_service import get_audit_logs, get_simple_audit_stats
 from app.services.admin_auth_service import is_admin_authenticated
@@ -171,7 +170,6 @@ templates = Jinja2Templates(directory="app/templates")
 def admin_dashboard(
     request: Request,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin_from_cookie),
 ):
 
     """داشبورد ادمین با نمایش لاگ‌ها و کاربران ثبت‌شده."""
