@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://kerman_bd"
 
 
 def test_auth_endpoints():

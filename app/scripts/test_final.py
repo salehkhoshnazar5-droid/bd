@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://kerman_bd"
 
 
 def test_final_system():
@@ -38,8 +38,8 @@ def test_final_system():
 
     print("\n🎯 سیستم آماده است! دستورات:")
     print("1. اجرای سرور: uvicorn app.main:app --reload")
-    print("2. مشاهده مستندات: http://localhost:8000/docs")
-    print("3. رابط کاربری: http://localhost:8000/ui-auth")
+    print("2. مشاهده مستندات: http://kerman_bd/docs")
+    print("3. رابط کاربری: http://kerman_bd/ui-auth")
     print("4. ایجاد ادمین: python scripts/create_admin.py")
 
 

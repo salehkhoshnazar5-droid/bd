@@ -232,6 +232,13 @@ async def read_root():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>سامانه مدیریت بسیج دانشجویی</title>
+        <link rel="icon" href="/static/icon/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/static/icon/android-chrome-192x192.png" type="image/png" sizes="192x192">
+        <link rel="icon" href="/static/icon/android-chrome-512x512.png" type="image/png" sizes="512x512">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/icon/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/icon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/static/icon/favicon-16x16.png">
+        <link rel="manifest" href="/static/icon/site.webmanifest">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
         <style>

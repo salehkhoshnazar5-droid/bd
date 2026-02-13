@@ -56,7 +56,7 @@ def get_settings() -> Settings:
     return Settings(
         database_url=os.getenv("DATABASE_URL", "sqlite:///./basij.db"),
         sql_echo=_parse_bool(os.getenv("SQL_ECHO"), False),
-        cors_allow_origins=_parse_csv(os.getenv("CORS_ALLOW_ORIGINS"), ("*",)),
+        cors_allow_origins=_parse_csv(os.getenv("CORS_ALLOW_ORIGINS"), ("http://kerman_bd", "http://127.0.0.1", "http://localhost")),
         cors_allow_credentials=_parse_bool(os.getenv("CORS_ALLOW_CREDENTIALS"), True),
         cors_allow_methods=_parse_csv(os.getenv("CORS_ALLOW_METHODS"), ("*",)),
         cors_allow_headers=_parse_csv(os.getenv("CORS_ALLOW_HEADERS"), ("*",)),
