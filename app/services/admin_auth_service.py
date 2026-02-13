@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Dict
@@ -16,17 +17,21 @@ _ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH") or hash_password(
 
 _failed_attempts: Dict[str, Dict[str, datetime | int]] = {}
 _attempts_lock = Lock()
+logger = logging.getLogger(__name__)
 
 
-def _client_key(request: Request) -> str:
+def _client_identifier(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
+def _client_key(request: Request) -> str:
+    """Backward-compatible alias used by older callers."""
+    return _client_identifier(request)
 
 def is_locked_out(request: Request) -> tuple[bool, int]:
-    key = _client_key(request)
+    key = _client_identifier(request)
     now = datetime.now(timezone.utc)
 
     with _attempts_lock:
@@ -46,38 +51,42 @@ def is_locked_out(request: Request) -> tuple[bool, int]:
 
 
 def authenticate_admin_password(request: Request, password: str) -> tuple[bool, str | None]:
-    locked, minutes = is_locked_out(request)
-    if locked:
-        return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
+    try:
+        locked, minutes = is_locked_out(request)
+        if locked:
+            return False, f"ورود شما موقتاً قفل شده است. لطفاً {minutes} دقیقه دیگر تلاش کنید."
 
-    if verify_password(password, _ADMIN_PASSWORD_HASH):
-        clear_failed_attempts(request)
-        return True, None
+        if verify_password(password, _ADMIN_PASSWORD_HASH):
+            clear_failed_attempts(request)
+            return True, None
 
-    key = _client_key(request)
-    now = datetime.now(timezone.utc)
+        key = _client_identifier(request)
+        now = datetime.now(timezone.utc)
 
-    with _attempts_lock:
-        entry = _failed_attempts.get(key, {"count": 0, "locked_until": None})
-        entry["count"] = int(entry["count"]) + 1
+        with _attempts_lock:
+            entry = _failed_attempts.get(key, {"count": 0, "locked_until": None})
+            entry["count"] = int(entry["count"]) + 1
 
-        if entry["count"] >= MAX_ADMIN_LOGIN_ATTEMPTS:
-            entry["locked_until"] = now + timedelta(minutes=ADMIN_LOCKOUT_MINUTES)
+            if entry["count"] >= MAX_ADMIN_LOGIN_ATTEMPTS:
+                entry["locked_until"] = now + timedelta(minutes=ADMIN_LOCKOUT_MINUTES)
+                _failed_attempts[key] = entry
+                return (
+                    False,
+                    f"به دلیل ورود ناموفق متوالی، دسترسی شما به مدت {ADMIN_LOCKOUT_MINUTES} دقیقه قفل شد.",
+                )
+
             _failed_attempts[key] = entry
-            return (
-                False,
-                f"به دلیل ورود ناموفق متوالی، دسترسی شما به مدت {ADMIN_LOCKOUT_MINUTES} دقیقه قفل شد.",
-            )
+            remaining = MAX_ADMIN_LOGIN_ATTEMPTS - int(entry["count"])
 
-        _failed_attempts[key] = entry
-        remaining = MAX_ADMIN_LOGIN_ATTEMPTS - int(entry["count"])
-
-    return False, f"رمز عبور ادمین اشتباه است. {remaining} تلاش دیگر باقی مانده است."
+        return False, f"رمز عبور ادمین اشتباه است. {remaining} تلاش دیگر باقی مانده است."
+    except Exception:
+        logger.exception("admin authentication failed unexpectedly")
+        return False, "خطای داخلی در احراز هویت مدیر. لطفاً دوباره تلاش کنید."
 
 
 def clear_failed_attempts(request: Request) -> None:
     with _attempts_lock:
-        _failed_attempts.pop(_client_key(request), None)
+        _failed_attempts.pop(_client_identifier(request), None)
 
 
 def create_admin_token() -> str:

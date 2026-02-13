@@ -44,7 +44,11 @@ def admin_login_page(request: Request, error_message: Optional[str] = None):
 
 @router.post("/login", response_class=HTMLResponse)
 def admin_login_submit(request: Request, password: str = Form(...)):
-    authenticated, error_message = authenticate_admin_password(request, password)
+    try:
+        authenticated, error_message = authenticate_admin_password(request, password)
+    except Exception:
+        logger.exception("unexpected error in admin_login_submit")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     if not authenticated:
 
         return templates.TemplateResponse(
@@ -72,7 +76,11 @@ def admin_login_submit(request: Request, password: str = Form(...)):
 
 @router.post("/authenticate")
 def admin_authenticate(request: Request, password: str = Form(...)):
-    authenticated, error_message = authenticate_admin_password(request, password)
+    try:
+        authenticated, error_message = authenticate_admin_password(request, password)
+    except Exception:
+        logger.exception("unexpected error in admin_authenticate")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     if not authenticated:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
