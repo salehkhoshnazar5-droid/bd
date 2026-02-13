@@ -1,22 +1,19 @@
 import logging
-import secrets
-from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
-
 from app.core.deps import get_db
-from app.core.security import get_current_admin
+from app.models.audit_log import AuditLog
 from app.models.user import User
 from app.services.admin_auth_service import (
     authenticate_admin_password,
     create_admin_token,
     is_admin_authenticated,
 )
-from app.services.audit_service import get_audit_logs, get_simple_audit_stats
+from app.services.audit_service import format_persian_datetime, get_simple_audit_stats
 
 
 
@@ -101,7 +98,6 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 
 
 
-    recent_logs = get_audit_logs(db, limit=10)
     stats = get_simple_audit_stats(db)
 
     users = (
@@ -116,8 +112,8 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "users": users,
-            "recent_logs": recent_logs.get("logs", []),
             "stats": stats,
+            "format_persian_datetime": format_persian_datetime,
         },
     )
 
@@ -144,71 +140,15 @@ def admin_user_details(user_id: int, request: Request, db: Session = Depends(get
     if not user:
         raise HTTPException(status_code=404, detail="کاربر یافت نشد")
 
-    return templates.TemplateResponse("admin/user_details.html", {"request": request, "user": user})
-
-
-@router.get("/audit-logs", response_class=HTMLResponse)
-def audit_logs_page(
-    request: Request,
-    db: Session = Depends(get_db),
-    skip: int = Query(0, ge=0, description="تعداد رکوردهای رد شده"),
-    limit: int = Query(50, ge=1, le=200, description="تعداد رکوردهای قابل نمایش"),
-    date_from: Optional[datetime] = Query(None, description="تاریخ شروع"),
-    date_to: Optional[datetime] = Query(None, description="تاریخ پایان"),
-    action: Optional[str] = Query(None, description="فیلتر بر اساس عمل"),
-    user_id: Optional[int] = Query(None, description="فیلتر بر اساس کاربر"),
-
-):
-
-    if not is_admin_authenticated(request):
-        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
-
-    result = get_audit_logs(
-        db=db,
-        skip=skip,
-        limit=limit,
-        date_from=date_from,
-        date_to=date_to,
-        action=action,
-        user_id=user_id,
-    )
 
     return templates.TemplateResponse(
-        "admin/audit_logs.html",
+        "admin/user_details.html",
         {
             "request": request,
-            "logs": result.get("logs", []),
-            "total": result.get("total", 0),
-            "skip": skip,
-            "limit": limit,
-            "has_more": result.get("has_more", False),
-            "filters": {
-                "user_id": user_id or "",
-                "action": action or "",
-                "date_from": date_from.isoformat() if date_from else "",
-                "date_to": date_to.isoformat() if date_to else "",
-            },
+            "user": user,
+            "format_persian_datetime": format_persian_datetime,
+            "user_total_changes": db.query(AuditLog).filter(AuditLog.user_id == user.id).count(),
         },
     )
 
-@router.get("/api/audit-logs", response_model=dict)
-def list_audit_logs_api(
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_admin),
-    skip: int = Query(0, ge=0),
-        limit: int = Query(50, ge=1, le=200),
-        date_from: Optional[datetime] = Query(None),
-        date_to: Optional[datetime] = Query(None),
-        action: Optional[str] = Query(None),
-        user_id: Optional[int] = Query(None),
-):
-    return get_audit_logs(
-        db=db,
-        skip=skip,
-        limit=limit,
-        date_from=date_from,
-        date_to=date_to,
-        action=action,
-        user_id=user_id
-    )
 

@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}پروفایل کاربری{% endblock %}
@@ -10,6 +9,14 @@
         <div class="card-body">
             <h5 class="card-title">اطلاعات شخصی</h5>
             <table class="table">
+                <tr>
+                    <th>نام:</th>
+                    <td>{{ profile.first_name if profile else 'ثبت نشده' }}</td>
+                </tr>
+                <tr>
+                    <th>نام خانوادگی:</th>
+                    <td>{{ profile.last_name if profile else 'ثبت نشده' }}</td>
+                </tr>
                 <tr>
                     <th>شماره دانشجویی:</th>
                     <td>{{ user.student_number }}</td>

@@ -83,7 +83,7 @@ async def create_default_roles():
     except SQLAlchemyError:
         db.rollback()
         logger.exception("❌ Database error while creating default roles")
-        # برنامه را متوقف نکن، فقط خطا را لاگ کن
+
     finally:
         db.close()
 # ایجاد برنامه FastAPI

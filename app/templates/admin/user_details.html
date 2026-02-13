@@ -12,7 +12,8 @@
   <div class="card-body">
     <ul class="list-group list-group-flush">
       <li class="list-group-item"><strong>شناسه:</strong> {{ user.id }}</li>
-      <li class="list-group-item"><strong>نام:</strong> {{ user.profile.first_name if user.profile else '-' }} {{ user.profile.last_name if user.profile else '' }}</li>
+      <li class="list-group-item"><strong>نام:</strong> {{ user.profile.first_name if user.profile else '-' }}</li>
+      <li class="list-group-item"><strong>نام خانوادگی:</strong> {{ user.profile.last_name if user.profile else '-' }}</li>
       <li class="list-group-item"><strong>شماره دانشجویی:</strong> {{ user.student_number }}</li>
       <li class="list-group-item"><strong>کد ملی:</strong> {{ user.profile.national_code if user.profile else '-' }}</li>
       <li class="list-group-item"><strong>تلفن:</strong> {{ user.profile.phone_number if user.profile else '-' }}</li>
@@ -27,7 +28,8 @@
 </li>
       <li class="list-group-item"><strong>آدرس:</strong> {{ user.profile.address if user.profile else '-' }}</li>
       <li class="list-group-item"><strong>نقش:</strong> کاربر</li>
-      <li class="list-group-item"><strong>تاریخ ثبت‌نام:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '-' }}</li>
+      <li class="list-group-item"><strong>تاریخ ثبت‌نام:</strong> {{ format_persian_datetime(user.created_at, True) if user.created_at else '-' }}</li>
+      <li class="list-group-item"><strong>تعداد تغییرات اطلاعات:</strong> {{ user_total_changes }}</li>
     </ul>
   </div>
 </div>

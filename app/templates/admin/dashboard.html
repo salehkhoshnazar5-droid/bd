@@ -4,7 +4,6 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="mb-0">📊 داشبورد مدیر</h4>
   <div>
-    <a href="/admin/audit-logs" class="btn btn-outline-primary btn-sm">مشاهده لاگ‌ها</a>
     <a href="/admin/logout" class="btn btn-outline-danger btn-sm">خروج</a>
   </div>
 </div>
@@ -32,7 +31,7 @@
     <div class="card text-center shadow-sm border-info">
       <div class="card-body">
         <h6 class="text-muted">نوع عملیات ثبت‌شده</h6>
-        <h2 class="text-info">{{ stats.actions|length }}</h2>
+        <h2 class="text-info">{{ stats.total_changes }}</h2>
       </div>
     </div>
   </div>
@@ -45,7 +44,7 @@
       <table class="table table-hover align-middle">
         <thead>
           <tr>
-            <th>نام</th>
+            <th>نام کامل</th>
             <th>شماره دانشجویی</th>
             <th>کد ملی</th>
             <th>نقش</th>
@@ -59,45 +58,13 @@
             <td>{{ user.profile.first_name if user.profile else '-' }} {{ user.profile.last_name if user.profile else '' }}</td>
             <td>{{ user.student_number }}</td>
             <td>{{ user.profile.national_code if user.profile else '-' }}</td>
-            <td><span class="badge bg-secondary">{{ user.role.name if user.role else '-' }}</span></td>
-            <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+            <td><span class="badge bg-secondary">کاربر</span></td>
+            <td>{{ format_persian_datetime(user.created_at) if user.created_at else '-' }}</td>
             <td><a class="btn btn-sm btn-outline-primary" href="/admin/users/{{ user.id }}">جزئیات</a></td>
           </tr>
           {% else %}
           <tr>
             <td colspan="6" class="text-center text-muted">کاربری یافت نشد.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="card shadow-sm">
-  <div class="card-header bg-light">⏰ آخرین لاگ‌ها</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-sm">
-        <thead>
-          <tr>
-            <th>زمان</th>
-            <th>کاربر</th>
-            <th>عملیات</th>
-            <th>توضیحات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in recent_logs %}
-          <tr>
-            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
-            <td>{{ log.user_id or '-' }}</td>
-            <td>{{ log.action }}</td>
-            <td>{{ log.description or '-' }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="4" class="text-center text-muted">لاگی ثبت نشده است.</td>
           </tr>
           {% endfor %}
         </tbody>
