@@ -43,6 +43,14 @@ class Settings:
     geo_allow_iran_only: bool
     enforce_browser_only: bool
     trusted_country_header: str
+    public_base_url: str
+    email_from: str
+    smtp_host: Optional[str]
+    smtp_port: int
+    smtp_username: Optional[str]
+    smtp_password: Optional[str]
+    smtp_starttls: bool
+
 
 
 @lru_cache(maxsize=1)
@@ -73,6 +81,13 @@ def get_settings() -> Settings:
         geo_allow_iran_only=_parse_bool(os.getenv("GEO_ALLOW_IRAN_ONLY"), True),
         enforce_browser_only=_parse_bool(os.getenv("ENFORCE_BROWSER_ONLY"), True),
         trusted_country_header=os.getenv("TRUSTED_COUNTRY_HEADER", "CF-IPCountry"),
+        public_base_url=os.getenv("PUBLIC_BASE_URL", "https://localhost:8000"),
+        email_from=os.getenv("EMAIL_FROM", "noreply@example.com"),
+        smtp_host=os.getenv("SMTP_HOST"),
+        smtp_port=int(os.getenv("SMTP_PORT", "587")),
+        smtp_username=os.getenv("SMTP_USERNAME"),
+        smtp_password=os.getenv("SMTP_PASSWORD"),
+        smtp_starttls=_parse_bool(os.getenv("SMTP_STARTTLS"), True),
     )
 
 

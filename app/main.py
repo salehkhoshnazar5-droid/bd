@@ -14,6 +14,7 @@ from app.routers import student, admin, test, user, admin_ui, admin_dashboard, u
 from app.core.database import create_database
 from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
+from app.routers.public_registration import router as public_registration_router
 from app.core.confing import settings
 from app.core.json_utils import make_json_safe
 from app.core.geo_access import parse_client_ip, looks_like_browser, is_iran_country
@@ -159,6 +160,17 @@ async def log_requests(request: Request, call_next):
 
     logger.info(f"✅ Response: {method} {url} - Status: {response.status_code} - Time: {process_time:.3f}s")
 
+    return response
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").startswith("https"):
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 
@@ -385,6 +397,7 @@ async def health_check():
 app.include_router(auth_router)
 app.include_router(test.router)
 app.include_router(ui_auth_router)
+app.include_router(public_registration_router)
 app.include_router(user.router)
 app.include_router(student.router)
 app.include_router(admin.router)
