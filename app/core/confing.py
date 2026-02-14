@@ -39,6 +39,10 @@ class Settings:
     admin_login_password: str
     cookie_secure: bool
     log_level: str
+    geo_restriction_enabled: bool
+    geo_allow_iran_only: bool
+    enforce_browser_only: bool
+    trusted_country_header: str
 
 
 @lru_cache(maxsize=1)
@@ -65,6 +69,10 @@ def get_settings() -> Settings:
         admin_login_password=admin_login_password,
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE"), False),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
+        geo_restriction_enabled=_parse_bool(os.getenv("GEO_RESTRICTION_ENABLED"), False),
+        geo_allow_iran_only=_parse_bool(os.getenv("GEO_ALLOW_IRAN_ONLY"), True),
+        enforce_browser_only=_parse_bool(os.getenv("ENFORCE_BROWSER_ONLY"), True),
+        trusted_country_header=os.getenv("TRUSTED_COUNTRY_HEADER", "CF-IPCountry"),
     )
 
 

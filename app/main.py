@@ -16,6 +16,7 @@ from app.routers.auth import router as auth_router
 from app.routers.ui_auth import router as ui_auth_router
 from app.core.confing import settings
 from app.core.json_utils import make_json_safe
+from app.core.geo_access import parse_client_ip, looks_like_browser, is_iran_country
 
 
 # تنظیمات لاگ‌گیری
@@ -159,6 +160,41 @@ async def log_requests(request: Request, call_next):
     logger.info(f"✅ Response: {method} {url} - Status: {response.status_code} - Time: {process_time:.3f}s")
 
     return response
+
+
+@app.middleware("http")
+async def enforce_geo_policy(request: Request, call_next):
+    """Enforce optional Iran-only and browser-only access policy."""
+    if not settings.geo_restriction_enabled:
+        return await call_next(request)
+
+    if settings.enforce_browser_only and not looks_like_browser(request.headers.get("user-agent", "")):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "دسترسی فقط از طریق مرورگر مجاز است."},
+        )
+
+    country_header = settings.trusted_country_header
+    country_code = request.headers.get(country_header)
+
+    if settings.geo_allow_iran_only and not is_iran_country(country_code):
+        client_ip = parse_client_ip(
+            request.headers.get("x-forwarded-for"),
+            request.client.host if request.client else None,
+        )
+        logger.warning(
+            "⛔ Geo restriction denied request: path=%s ip=%s country=%s",
+            request.url.path,
+            client_ip or "unknown",
+            country_code or "unknown",
+        )
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "این سرویس فقط برای IPهای ایران در دسترس است."},
+        )
+
+    return await call_next(request)
+
 
 
 # سرویس فایل‌های استاتیک
