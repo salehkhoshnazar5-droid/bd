@@ -3,12 +3,7 @@ import logging
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.confing import settings
-
-import app.models.audit_log  # noqa: F401
-import app.models.noor_program  # noqa: F401
-import app.models.role  # noqa: F401
-import app.models.student_profile  # noqa: F401
-import app.models.user  # noqa: F401
+Base = declarative_base()
 
 DATABASE_URL = settings.database_url
 
@@ -26,7 +21,13 @@ SessionLocal = sessionmaker(
 )
 
 
-Base = declarative_base()
+def load_models():
+    """Import ORM models so SQLAlchemy can register metadata before create_all."""
+    import app.models.audit_log  # noqa: F401
+    import app.models.noor_program  # noqa: F401
+    import app.models.role  # noqa: F401
+    import app.models.student_profile  # noqa: F401
+    import app.models.user  # noqa: F401
 
 
 
@@ -116,6 +117,7 @@ def ensure_noor_program_schema():
 
 
 def create_database():
+    load_models()
     Base.metadata.create_all(bind=engine)
     ensure_student_profiles_schema()
     ensure_noor_program_schema()
