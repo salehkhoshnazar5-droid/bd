@@ -124,6 +124,10 @@ def ensure_noor_program_schema():
                 user_id INTEGER,
                 first_name VARCHAR(50) NOT NULL,
                 last_name VARCHAR(50) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                enrollment_date DATE NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
                 student_number VARCHAR(20),
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users (id)
@@ -135,6 +139,7 @@ def ensure_noor_program_schema():
         "CREATE INDEX IF NOT EXISTS ix_quran_class_requests_user_id ON quran_class_requests (user_id)",
         "CREATE INDEX IF NOT EXISTS ix_quran_classes_level ON quran_classes (level)",
         "CREATE INDEX IF NOT EXISTS ix_light_path_students_user_id ON light_path_students (user_id)",
+        "CREATE INDEX IF NOT EXISTS ix_light_path_students_email ON light_path_students (email)",
         "CREATE INDEX IF NOT EXISTS ix_light_path_students_student_number ON light_path_students (student_number)",
     ]
 
@@ -142,6 +147,26 @@ def ensure_noor_program_schema():
         for table_name, ddl in noor_tables.items():
             if table_name not in table_names:
                 connection.execute(text(ddl))
+        if "light_path_students" in table_names:
+            existing_columns = {column["name"] for column in inspector.get_columns("light_path_students")}
+            if "email" not in existing_columns:
+                connection.execute(
+                    text("ALTER TABLE light_path_students ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT ''")
+                )
+            if "phone_number" not in existing_columns:
+                connection.execute(
+                    text("ALTER TABLE light_path_students ADD COLUMN phone_number VARCHAR(20) NOT NULL DEFAULT ''")
+                )
+            if "enrollment_date" not in existing_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE light_path_students ADD COLUMN enrollment_date DATE NOT NULL DEFAULT CURRENT_DATE"
+                    )
+                )
+            if "is_active" not in existing_columns:
+                connection.execute(
+                    text("ALTER TABLE light_path_students ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1")
+                )
         for ddl in required_indexes:
             connection.execute(text(ddl))
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -35,6 +35,10 @@ class LightPathStudent(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    phone_number = Column(String(20), nullable=False)
+    enrollment_date = Column(Date, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
     student_number = Column(String(20), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

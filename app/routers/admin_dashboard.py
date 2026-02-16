@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
@@ -150,7 +151,10 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(100),
     )
 
-    total_users = len(light_path_students) + len(quran_class_requests)
+    users_count = db.query(User).count()
+    light_path_students_count = len(light_path_students)
+    total_users = users_count + light_path_students_count
+
     deleted_events = (
         db.query(AuditLog)
         .filter(
@@ -186,6 +190,8 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "quran_classes": quran_classes,
             "light_path_rows": light_path_rows,
             "total_users": total_users,
+            "users_count": users_count,
+            "light_path_students_count": light_path_students_count,
             "total_events": total_events,
             "format_persian_datetime": format_persian_datetime,
         },
@@ -197,6 +203,10 @@ def create_light_path_student(
     request: Request,
     first_name: str = Form(...),
     last_name: str = Form(...),
+    email: str = Form(...),
+    phone_number: str = Form(...),
+    enrollment_date: date = Form(...),
+    is_active: str = Form("active"),
     student_number: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -206,6 +216,10 @@ def create_light_path_student(
     record = LightPathStudent(
         first_name=first_name.strip(),
         last_name=last_name.strip(),
+        email=email.strip(),
+        phone_number=phone_number.strip(),
+        enrollment_date=enrollment_date,
+        is_active=is_active == "active",
         student_number=student_number.strip() or None,
     )
     db.add(record)
@@ -316,6 +330,10 @@ def edit_light_path_student(
     request: Request,
     first_name: str = Form(...),
     last_name: str = Form(...),
+    email: str = Form(...),
+    phone_number: str = Form(...),
+    enrollment_date: date = Form(...),
+    is_active: str = Form("active"),
     student_number: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -328,34 +346,15 @@ def edit_light_path_student(
 
     record.first_name = first_name.strip()
     record.last_name = last_name.strip()
+    record.email = email.strip()
+    record.phone_number = phone_number.strip()
+    record.enrollment_date = enrollment_date
+    record.is_active = is_active == "active"
     record.student_number = student_number.strip() or None
     db.commit()
 
     return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
-
-@router.post("/light-path-students/{student_id}/edit")
-def edit_light_path_student(
-    student_id: int,
-    request: Request,
-    first_name: str = Form(...),
-    last_name: str = Form(...),
-    student_number: str = Form(""),
-    db: Session = Depends(get_db),
-):
-    if not is_admin_authenticated(request):
-        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
-
-    record = db.query(LightPathStudent).filter(LightPathStudent.id == student_id).first()
-    if record is None:
-        raise HTTPException(status_code=404, detail="دانشجو یافت نشد")
-
-    record.first_name = first_name.strip()
-    record.last_name = last_name.strip()
-    record.student_number = student_number.strip() or None
-    db.commit()
-
-    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.post("/light-path-students/{student_id}/delete")
 def delete_light_path_student(student_id: int, request: Request, db: Session = Depends(get_db)):

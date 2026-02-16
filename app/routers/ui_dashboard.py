@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 import logging
@@ -177,6 +178,10 @@ async def redirect_to_light_path(request: Request, db: Session = DBDep()):
             user_id=user.id,
             first_name=first_name,
             last_name=last_name,
+            email=f"{user.student_number}@light-path.local",
+            phone_number=user.profile.phone_number if user.profile else "",
+            enrollment_date=date.today(),
+            is_active=True,
             student_number=user.student_number,
         )
     )
