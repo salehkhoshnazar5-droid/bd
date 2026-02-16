@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.confing import settings
 from app.core.deps import DBDep
 from app.core.validators import validate_phone_number
+from app.models.noor_program import LightPathStudent, QuranClassRequest
 from app.models.user import User
 
 router = APIRouter(prefix="/ui/dashboard", tags=["UI Dashboard"])
@@ -57,6 +58,109 @@ async def dashboard_page(request: Request, db: Session = DBDep()):
         },
     )
 
+
+@router.get("/noor", response_class=HTMLResponse)
+async def quran_class_request_page(
+    request: Request,
+    success_message: Optional[str] = None,
+    error_message: Optional[str] = None,
+    db: Session = DBDep(),
+):
+    user = _get_current_user_from_cookie(request, db)
+    if not user:
+        return RedirectResponse(
+            url="/ui-auth/login?redirect=/ui/dashboard/noor",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    return templates.TemplateResponse(
+        "dashboard/quran_request.html",
+        {
+            "request": request,
+            "user": user,
+            "profile": user.profile,
+            "success_message": success_message,
+            "error_message": error_message,
+            "levels": list(range(1, 10)),
+        },
+    )
+
+
+@router.post("/noor", response_class=HTMLResponse)
+async def quran_class_request_submit(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    level: int = Form(...),
+    db: Session = DBDep(),
+):
+    user = _get_current_user_from_cookie(request, db)
+    if not user:
+        return RedirectResponse(
+            url="/ui-auth/login?redirect=/ui/dashboard/noor",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if level not in range(1, 10):
+        return templates.TemplateResponse(
+            "dashboard/quran_request.html",
+            {
+                "request": request,
+                "user": user,
+                "profile": user.profile,
+                "error_message": "سطح انتخابی نامعتبر است.",
+                "levels": list(range(1, 10)),
+            },
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+    request_record = QuranClassRequest(
+        user_id=user.id,
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        level=level,
+    )
+    db.add(request_record)
+    db.commit()
+
+    return templates.TemplateResponse(
+        "dashboard/quran_request.html",
+        {
+            "request": request,
+            "user": user,
+            "profile": user.profile,
+            "success_message": "درخواست کلاس قرآن با موفقیت ثبت شد.",
+            "levels": list(range(1, 10)),
+        },
+    )
+
+
+@router.get("/masir-noor")
+async def redirect_to_light_path(request: Request, db: Session = DBDep()):
+    user = _get_current_user_from_cookie(request, db)
+    if not user:
+        return RedirectResponse(
+            url="/ui-auth/login?redirect=/ui/dashboard/masir-noor",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    first_name = user.profile.first_name if user.profile else ""
+    last_name = user.profile.last_name if user.profile else ""
+
+    db.add(
+        LightPathStudent(
+            user_id=user.id,
+            first_name=first_name,
+            last_name=last_name,
+            student_number=user.student_number,
+        )
+    )
+    db.commit()
+
+    return RedirectResponse(
+        url="http://kerman_bd/ui-auth/",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
 
 @router.get("/profile", response_class=HTMLResponse)
 async def profile_view_page(request: Request, db: Session = DBDep()):

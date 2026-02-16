@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}ثبت درخواست کلاس قرآن{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="mb-4">ثبت درخواست کلاس قرآن</h3>
+
+                {% if success_message %}
+                <div class="alert alert-success">{{ success_message }}</div>
+                {% endif %}
+
+                {% if error_message %}
+                <div class="alert alert-danger">{{ error_message }}</div>
+                {% endif %}
+
+                <form method="post" action="/ui/dashboard/noor">
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">ثبت نام</label>
+                        <input id="first_name" name="first_name" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">ثبت نام خانوادگی</label>
+                        <input id="last_name" name="last_name" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="level" class="form-label">انتخاب سطح</label>
+                        <select id="level" name="level" class="form-select" required>
+                            {% for current_level in levels %}
+                            <option value="{{ current_level }}">سطح {{ current_level }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">ثبت درخواست</button>
+                    <a href="/ui/dashboard" class="btn btn-outline-secondary">بازگشت</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

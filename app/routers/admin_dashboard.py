@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from app.core.deps import get_db
 from app.models.audit_log import AuditLog
+from app.models.noor_program import LightPathStudent, QuranClassRequest
 from app.models.user import User
 from app.services.admin_auth_service import (
     authenticate_admin_password,
@@ -107,15 +108,57 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(50)
         .all()
     )
+
+    quran_class_requests = (
+        db.query(QuranClassRequest)
+        .order_by(QuranClassRequest.created_at.desc())
+        .limit(100)
+        .all()
+    )
+
+    light_path_students = (
+        db.query(LightPathStudent)
+        .order_by(LightPathStudent.created_at.desc())
+        .limit(100)
+        .all()
+    )
+
     return templates.TemplateResponse(
         "admin/dashboard.html",
         {
             "request": request,
             "users": users,
             "stats": stats,
+            "quran_class_requests": quran_class_requests,
+            "light_path_students": light_path_students,
             "format_persian_datetime": format_persian_datetime,
         },
     )
+
+@router.post("/quran-classes/{request_id}/delete")
+def delete_quran_class_request(request_id: int, request: Request, db: Session = Depends(get_db)):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    record = db.query(QuranClassRequest).filter(QuranClassRequest.id == request_id).first()
+    if record:
+        db.delete(record)
+        db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/light-path-students/{student_id}/delete")
+def delete_light_path_student(student_id: int, request: Request, db: Session = Depends(get_db)):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    record = db.query(LightPathStudent).filter(LightPathStudent.id == student_id).first()
+    if record:
+        db.delete(record)
+        db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.get("/profile")
 def admin_profile(request: Request):
