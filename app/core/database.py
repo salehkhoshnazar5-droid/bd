@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.confing import settings
 Base = declarative_base()
+_RUNTIME_SCHEMA_VERIFIED = False
 
 DATABASE_URL = settings.database_url
 
@@ -122,6 +123,18 @@ def create_database():
     ensure_student_profiles_schema()
     ensure_noor_program_schema()
     logging.getLogger(__name__).info("✅ دیتابیس در %s ایجاد شد", DATABASE_URL)
+
+def ensure_runtime_schema():
+    """Ensure required tables exist even when startup lifespan hooks are skipped."""
+    global _RUNTIME_SCHEMA_VERIFIED
+    if _RUNTIME_SCHEMA_VERIFIED:
+        return
+
+    load_models()
+    Base.metadata.create_all(bind=engine)
+    ensure_student_profiles_schema()
+    ensure_noor_program_schema()
+    _RUNTIME_SCHEMA_VERIFIED = True
 
 
 def show_tables():

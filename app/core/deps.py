@@ -1,10 +1,11 @@
 from typing import Generator
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
+from app.core.database import SessionLocal, ensure_runtime_schema
 
 
 def get_db() -> Generator[Session, None, None]:
+    ensure_runtime_schema()
     db = SessionLocal()
     try:
         yield db

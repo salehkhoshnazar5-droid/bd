@@ -4,7 +4,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, joinedload
+from app.core.database import ensure_noor_program_schema
 from app.core.deps import get_db
 from app.models.audit_log import AuditLog
 from app.models.noor_program import LightPathStudent, QuranClass, QuranClassRequest
@@ -92,6 +94,15 @@ def admin_logout():
     response.delete_cookie("admin_access_token")
     return response
 
+def _query_with_noor_schema_repair(db: Session, build_query):
+    try:
+        return build_query().all()
+    except OperationalError:
+        db.rollback()
+        logger.exception("Noor program query failed; attempting schema repair and retry")
+        ensure_noor_program_schema()
+        return build_query().all()
+
 def _build_quran_request_lookup(records: list[QuranClassRequest]) -> dict[int, QuranClassRequest]:
     latest_by_user: dict[int, QuranClassRequest] = {}
     for request_item in records:
@@ -119,24 +130,24 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    quran_class_requests = (
-        db.query(QuranClassRequest)
+    quran_class_requests = _query_with_noor_schema_repair(
+        db,
+        lambda: db.query(QuranClassRequest)
         .order_by(QuranClassRequest.created_at.desc())
-        .limit(200)
-        .all()
+        .limit(200),
     )
 
-    quran_classes = (
-        db.query(QuranClass)
-        .order_by(QuranClass.created_at.desc())
-        .all()
+    quran_classes = _query_with_noor_schema_repair(
+        db,
+        lambda: db.query(QuranClass)
+        .order_by(QuranClass.created_at.desc()),
     )
 
-    light_path_students = (
-        db.query(LightPathStudent)
+    light_path_students = _query_with_noor_schema_repair(
+        db,
+        lambda: db.query(LightPathStudent)
         .order_by(LightPathStudent.created_at.desc())
-        .limit(100)
-        .all()
+        .limit(100),
     )
 
     latest_request_by_user = _build_quran_request_lookup(quran_class_requests)

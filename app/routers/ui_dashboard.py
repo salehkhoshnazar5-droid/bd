@@ -1,9 +1,12 @@
 from typing import Optional
 
+import logging
+
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jose import JWTError, jwt
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.confing import settings
@@ -15,6 +18,7 @@ from app.models.user import User
 router = APIRouter(prefix="/ui/dashboard", tags=["UI Dashboard"])
 
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 
 def _get_current_user_from_cookie(request: Request, db: Session) -> Optional[User]:
@@ -116,9 +120,31 @@ async def quran_class_request_submit(
         last_name=last_name.strip(),
         level=level,
     )
-    db.add(request_record)
-    db.commit()
-
+    try:
+        db.add(request_record)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception(
+            "Failed to persist Quran class request. user_id=%s first_name=%s last_name=%s level=%s",
+            user.id if user else None,
+            first_name.strip(),
+            last_name.strip(),
+            level,
+        )
+        return templates.TemplateResponse(
+            "dashboard/quran_request.html",
+            {
+                "request": request,
+                "user": user,
+                "profile": profile,
+                "default_first_name": first_name.strip(),
+                "default_last_name": last_name.strip(),
+                "error_message": "خطا در ثبت درخواست کلاس قرآن. لطفاً دوباره تلاش کنید.",
+                "levels": list(range(1, 10)),
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     return templates.TemplateResponse(
         "dashboard/quran_request.html",
         {
