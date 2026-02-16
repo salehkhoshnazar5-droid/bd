@@ -1,0 +1,64 @@
+# FastAPI / Pydantic compatibility notes
+
+If you see this startup error:
+
+```txt
+pydantic.errors.ConfigError: unable to infer type for attribute "name"
+```
+
+while FastAPI imports `fastapi.openapi.models.Contact`, the issue is usually an
+**environment compatibility mismatch**, not a missing type annotation in your app model.
+
+## Why this happens
+
+- `fastapi==0.80.0` is built on Pydantic v1 internals.
+- Pydantic v1 can fail on newer Python runtimes (especially Python 3.14+),
+  producing confusing model initialization errors.
+- FastAPI `< 0.100` is also incompatible with Pydantic v2.
+
+## Known-good versions for this project
+
+- `python==3.10` or `python==3.11`
+- `fastapi==0.80.0`
+- `pydantic==1.10.2` (or another `1.10.x`)
+- `uvicorn==0.18.0`
+
+## Two valid fix paths
+
+### Path A (keep FastAPI 0.80.0)
+
+Use Python 3.10/3.11 and Pydantic 1.10.x:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r app/requirements.txt
+uvicorn app.main:app --reload
+```
+
+### Path B (upgrade stack)
+
+Upgrade to modern FastAPI + Pydantic v2 together (recommended for Python 3.14+):
+
+- `fastapi>=0.115`
+- `pydantic>=2.7`
+- update application schemas/config to Pydantic v2 style where needed.
+
+## Contact model typing reminder
+
+In your own app models/schemas, always declare explicit annotations:
+
+```python
+from pydantic import BaseModel, Field
+
+
+class Contact(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+```
+
+And if you need extra fields, use a `Config` class in Pydantic v1:
+
+```python
+class Config:
+    extra = "allow"
+```

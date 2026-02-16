@@ -18,6 +18,7 @@ from app.routers.public_registration import router as public_registration_router
 from app.core.confing import settings
 from app.core.json_utils import make_json_safe
 from app.core.geo_access import parse_client_ip, looks_like_browser, is_iran_country
+from app.core.version_checks import validate_runtime_compatibility
 
 
 # تنظیمات لاگ‌گیری
@@ -26,6 +27,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+validate_runtime_compatibility()
+
 SWAGGER_OPENAPI_URL = "/openapi.json"
 SWAGGER_TITLE = "سامانه مدیریت بسیج دانشجویی"
 SWAGGER_OAUTH2_REDIRECT_URL = "/docs/oauth2-redirect"
