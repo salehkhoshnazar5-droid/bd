@@ -1,6 +1,7 @@
 # app/core/database.py
 import logging
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.confing import settings
 Base = declarative_base()
@@ -60,7 +61,37 @@ def ensure_student_profiles_schema():
                 text(f"ALTER TABLE student_profiles ADD COLUMN {column_name} {column_ddl}")
             )
         if "ix_student_profiles_phone_number" not in existing_indexes:
-            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_student_profiles_phone_number ON student_profiles (phone_number)"))
+            duplicate_phone_numbers = connection.execute(
+                text(
+                    """
+                    SELECT phone_number
+                    FROM student_profiles
+                    GROUP BY phone_number
+                    HAVING COUNT(*) > 1
+                    LIMIT 1
+                    """
+                )
+            ).first()
+
+            if duplicate_phone_numbers:
+                logging.getLogger(__name__).warning(
+                    "Skipped creating unique index on student_profiles.phone_number "
+                    "because duplicate values already exist (example=%s).",
+                    duplicate_phone_numbers[0],
+                )
+                return
+
+            try:
+                connection.execute(
+                    text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS ix_student_profiles_phone_number "
+                        "ON student_profiles (phone_number)"
+                    )
+                )
+            except IntegrityError:
+                logging.getLogger(__name__).exception(
+                    "Failed to create unique index ix_student_profiles_phone_number due to existing duplicates."
+                )
 
 
 def ensure_noor_program_schema():

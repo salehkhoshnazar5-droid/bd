@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.student_profile import StudentProfile
@@ -58,6 +59,28 @@ def _check_uniqueness(
                 detail="شماره تماس قبلاً ثبت شده است",
             )
 
+def _translate_integrity_error(exc: IntegrityError) -> HTTPException:
+    message = str(exc.orig).lower() if getattr(exc, "orig", None) else str(exc).lower()
+    if "student_profiles.phone_number" in message:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="شماره تماس قبلاً ثبت شده است",
+        )
+    if "student_profiles.national_code" in message:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="کد ملی قبلاً ثبت شده است",
+        )
+    if "student_profiles.student_number" in message or "users.student_number" in message:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="شماره دانشجویی قبلاً ثبت شده است",
+        )
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="اطلاعات وارد شده تکراری است",
+    )
+
 def get_my_profile(db: Session, user: User) -> StudentProfile:
 
     profile = (
@@ -89,7 +112,11 @@ def update_my_profile(
     for field, value in data.dict(exclude_unset=True).items():
         setattr(profile, field, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise _translate_integrity_error(exc) from exc
     db.refresh(profile)
     return profile
 
@@ -139,7 +166,11 @@ def admin_update_student(
     if profile.user:
         profile.user.student_number = data.student_number
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise _translate_integrity_error(exc) from exc
     db.refresh(profile)
     return profile
 
@@ -186,7 +217,11 @@ def admin_create_student(db: Session, data: AdminStudentUpdate) -> StudentProfil
         address=data.address,
     )
     db.add(profile)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise _translate_integrity_error(exc) from exc
     db.refresh(profile)
     return profile
 
