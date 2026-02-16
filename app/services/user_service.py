@@ -13,6 +13,7 @@ def _check_uniqueness(
     national_code: str,
     student_number: str,
     exclude_user_id: int,
+    phone_number: str | None = None,
 ):
 
     conflict = (
@@ -42,6 +43,21 @@ def _check_uniqueness(
         )
 
 
+    if phone_number is not None:
+        phone_conflict = (
+            db.query(StudentProfile)
+            .filter(
+                StudentProfile.phone_number == phone_number,
+                StudentProfile.user_id != exclude_user_id,
+            )
+            .first()
+        )
+        if phone_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="شماره تماس قبلاً ثبت شده است",
+            )
+
 def get_my_profile(db: Session, user: User) -> StudentProfile:
 
     profile = (
@@ -67,6 +83,7 @@ def update_my_profile(
         national_code,
         profile.student_number,
         user.id,
+        data.phone_number if data.phone_number is not None else None,
     )
 
     for field, value in data.dict(exclude_unset=True).items():
@@ -114,6 +131,7 @@ def admin_update_student(
         data.national_code,
         data.student_number,
         profile.user_id,
+        data.phone_number,
     )
 
     for field, value in data.dict(exclude_unset=True).items():
@@ -126,15 +144,14 @@ def admin_update_student(
     return profile
 
 def admin_create_student(db: Session, data: AdminStudentUpdate) -> StudentProfile:
-    _check_uniqueness(db, data.national_code, data.student_number, exclude_user_id=0)
-
-    existing_national_code = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.national_code == data.national_code)
-        .first()
+    _check_uniqueness(
+        db,
+        data.national_code,
+        data.student_number,
+        exclude_user_id=0,
+        phone_number=data.phone_number,
     )
-    if existing_national_code:
-        raise HTTPException(status_code=400, detail="کد ملی قبلاً ثبت شده است")
+
 
     existing_phone = (
         db.query(StudentProfile)

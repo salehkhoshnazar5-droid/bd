@@ -6,13 +6,14 @@ from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jose import JWTError, jwt
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.confing import settings
 from app.core.deps import DBDep
 from app.core.validators import validate_phone_number
 from app.models.noor_program import LightPathStudent, QuranClassRequest
+from app.models.student_profile import StudentProfile
 from app.models.user import User
 
 router = APIRouter(prefix="/ui/dashboard", tags=["UI Dashboard"])
@@ -43,7 +44,7 @@ def _get_current_user_from_cookie(request: Request, db: Session) -> Optional[Use
     )
 
 
-@router.get("", response_class=HTMLResponse)
+
 @router.get("/", response_class=HTMLResponse)
 async def dashboard_page(request: Request, db: Session = DBDep()):
     user = _get_current_user_from_cookie(request, db)
@@ -271,11 +272,43 @@ async def profile_edit_submit(
             },
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
+    existing_phone = (
+        db.query(StudentProfile)
+        .filter(
+            StudentProfile.phone_number == normalized_phone,
+            StudentProfile.user_id != user.id,
+        )
+        .first()
+    )
+    if existing_phone:
+        return templates.TemplateResponse(
+            "profile/edit.html",
+            {
+                "request": request,
+                "user": user,
+                "profile": profile,
+                "error_message": "این شماره تلفن قبلاً ثبت شده است.",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
     profile.phone_number = normalized_phone
     profile.address = address.strip() if address else None
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return templates.TemplateResponse(
+            "profile/edit.html",
+            {
+                "request": request,
+                "user": user,
+                "profile": profile,
+                "error_message": "این شماره تلفن قبلاً ثبت شده است.",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
     return RedirectResponse(
         url="/ui/dashboard/profile",
