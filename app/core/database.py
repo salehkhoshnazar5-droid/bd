@@ -4,6 +4,12 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.confing import settings
 
+import app.models.audit_log  # noqa: F401
+import app.models.noor_program  # noqa: F401
+import app.models.role  # noqa: F401
+import app.models.student_profile  # noqa: F401
+import app.models.user  # noqa: F401
+
 DATABASE_URL = settings.database_url
 
 
@@ -55,11 +61,64 @@ def ensure_student_profiles_schema():
             connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_student_profiles_phone_number ON student_profiles (phone_number)"))
 
 
+def ensure_noor_program_schema():
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    noor_tables = {
+        "quran_class_requests": """
+            CREATE TABLE IF NOT EXISTS quran_class_requests (
+                id INTEGER NOT NULL PRIMARY KEY,
+                user_id INTEGER,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL,
+                level INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users (id)
+            )
+        """,
+        "quran_classes": """
+            CREATE TABLE IF NOT EXISTS quran_classes (
+                id INTEGER NOT NULL PRIMARY KEY,
+                title VARCHAR(100) NOT NULL,
+                level INTEGER NOT NULL,
+                description VARCHAR(255),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+            )
+        """,
+        "light_path_students": """
+            CREATE TABLE IF NOT EXISTS light_path_students (
+                id INTEGER NOT NULL PRIMARY KEY,
+                user_id INTEGER,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL,
+                student_number VARCHAR(20),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users (id)
+            )
+        """,
+    }
+
+    required_indexes = [
+        "CREATE INDEX IF NOT EXISTS ix_quran_class_requests_user_id ON quran_class_requests (user_id)",
+        "CREATE INDEX IF NOT EXISTS ix_quran_classes_level ON quran_classes (level)",
+        "CREATE INDEX IF NOT EXISTS ix_light_path_students_user_id ON light_path_students (user_id)",
+        "CREATE INDEX IF NOT EXISTS ix_light_path_students_student_number ON light_path_students (student_number)",
+    ]
+
+    with engine.begin() as connection:
+        for table_name, ddl in noor_tables.items():
+            if table_name not in table_names:
+                connection.execute(text(ddl))
+        for ddl in required_indexes:
+            connection.execute(text(ddl))
+
+
 
 
 def create_database():
     Base.metadata.create_all(bind=engine)
     ensure_student_profiles_schema()
+    ensure_noor_program_schema()
     logging.getLogger(__name__).info("✅ دیتابیس در %s ایجاد شد", DATABASE_URL)
 
 

@@ -67,18 +67,16 @@ async def quran_class_request_page(
     db: Session = DBDep(),
 ):
     user = _get_current_user_from_cookie(request, db)
-    if not user:
-        return RedirectResponse(
-            url="/ui-auth/login?redirect=/ui/dashboard/noor",
-            status_code=status.HTTP_303_SEE_OTHER,
-        )
+    profile = user.profile if user else None
 
     return templates.TemplateResponse(
         "dashboard/quran_request.html",
         {
             "request": request,
             "user": user,
-            "profile": user.profile,
+            "profile": profile,
+            "default_first_name": profile.first_name if profile else "",
+            "default_last_name": profile.last_name if profile else "",
             "success_message": success_message,
             "error_message": error_message,
             "levels": list(range(1, 10)),
@@ -95,11 +93,7 @@ async def quran_class_request_submit(
     db: Session = DBDep(),
 ):
     user = _get_current_user_from_cookie(request, db)
-    if not user:
-        return RedirectResponse(
-            url="/ui-auth/login?redirect=/ui/dashboard/noor",
-            status_code=status.HTTP_303_SEE_OTHER,
-        )
+    profile = user.profile if user else None
 
     if level not in range(1, 10):
         return templates.TemplateResponse(
@@ -107,7 +101,9 @@ async def quran_class_request_submit(
             {
                 "request": request,
                 "user": user,
-                "profile": user.profile,
+                "profile": profile,
+                "default_first_name": first_name.strip(),
+                "default_last_name": last_name.strip(),
                 "error_message": "سطح انتخابی نامعتبر است.",
                 "levels": list(range(1, 10)),
             },
@@ -115,7 +111,7 @@ async def quran_class_request_submit(
         )
 
     request_record = QuranClassRequest(
-        user_id=user.id,
+        user_id=user.id if user else None,
         first_name=first_name.strip(),
         last_name=last_name.strip(),
         level=level,
@@ -128,7 +124,9 @@ async def quran_class_request_submit(
         {
             "request": request,
             "user": user,
-            "profile": user.profile,
+            "profile": profile,
+            "default_first_name": "",
+            "default_last_name": "",
             "success_message": "درخواست کلاس قرآن با موفقیت ثبت شد.",
             "levels": list(range(1, 10)),
         },

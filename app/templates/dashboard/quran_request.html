@@ -19,13 +19,13 @@
 
                 <form method="post" action="/ui/dashboard/noor">
                     <div class="mb-3">
-                        <label for="first_name" class="form-label">ثبت نام</label>
-                        <input id="first_name" name="first_name" class="form-control" required>
+                        <label for="first_name" class="form-label">نام</label>
+                        <input id="first_name" name="first_name" class="form-control" value="{{ default_first_name }}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="last_name" class="form-label">ثبت نام خانوادگی</label>
-                        <input id="last_name" name="last_name" class="form-control" required>
+                        <label for="last_name" class="form-label">نام خانوادگی</label>
+                        <input id="last_name" name="last_name" class="form-control" value="{{ default_last_name }}" required>
                     </div>
 
                     <div class="mb-3">
