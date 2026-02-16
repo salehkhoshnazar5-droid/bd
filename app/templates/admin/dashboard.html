@@ -10,7 +10,7 @@
   <div class="card text-center shadow-sm border-primary">
     <div class="card-body">
       <h6 class="text-muted">تعداد کاربران</h6>
-      <h2 class="text-primary">{{ users|length }}</h2>
+      <h2 class="text-primary">{{ total_users }}</h2>
     </div>
   </div>
 </div>
@@ -19,7 +19,7 @@
   <div class="card text-center shadow-sm border-info"> <!-- تغییر به رنگ آبی برای حاشیه -->
     <div class="card-body">
       <h6 class="text-muted">کل رویدادها</h6>
-      <h2 class="text-info">{{ stats.total_logs }}</h2> <!-- تغییر به رنگ آبی برای متن -->
+      <h2 class="text-info">{{ total_events }}</h2> <!-- تغییر به رنگ آبی برای متن -->
     </div>
   </div>
 </div>
@@ -80,7 +80,7 @@
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-striped align-middle">
-        <thead><tr><th>نام</th><th>نام خانوادگی</th><th>سطح</th><th>وضعیت</th><th>شماره دانشجویی</th><th>تاریخ ثبت</th><th>مدیریت</th></tr></thead>
+        <thead><tr><th>نام</th><th>نام خانوادگی</th><th>شماره دانشجویی</th><th>تاریخ ثبت</th><th>مدیریت</th></tr></thead>
         <tbody>
           {% for row in light_path_rows %}
           <tr>
@@ -100,7 +100,8 @@
                 <button class="btn btn-sm btn-outline-primary" type="submit">ذخیره</button>
               </form>
               <form method="post" action="/admin/light-path-students/{{ row.record.id }}/delete">
-                <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+                <button class="btn btn-sm btn-outline-danger w-100" type="submit">حذف</button>
+                <a href="http://kerman_bd/admin/dashboard" class="btn btn-outline-danger w-100">خروج</a>
               </form>
             </td>
           </tr>

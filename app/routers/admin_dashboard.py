@@ -16,7 +16,7 @@ from app.services.admin_auth_service import (
     create_admin_token,
     is_admin_authenticated,
 )
-from app.services.audit_service import format_persian_datetime, get_simple_audit_stats
+from app.services.audit_service import create_audit_log, format_persian_datetime, get_simple_audit_stats
 
 
 
@@ -150,6 +150,19 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(100),
     )
 
+    total_users = len(light_path_students) + len(quran_class_requests)
+    deleted_events = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.action == "delete",
+            AuditLog.entity.in_(["light_path_student", "quran_scholar"]),
+        )
+        .count()
+    )
+    all_events = len(light_path_students) + len(quran_class_requests)
+    total_events = all_events + deleted_events
+
+
     latest_request_by_user = _build_quran_request_lookup(quran_class_requests)
     light_path_rows = []
     for student in light_path_students:
@@ -172,9 +185,43 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "quran_class_requests": quran_class_requests,
             "quran_classes": quran_classes,
             "light_path_rows": light_path_rows,
+            "total_users": total_users,
+            "total_events": total_events,
             "format_persian_datetime": format_persian_datetime,
         },
     )
+
+
+@router.post("/light-path-students")
+def create_light_path_student(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    student_number: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    record = LightPathStudent(
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        student_number=student_number.strip() or None,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    create_audit_log(
+        db=db,
+        action="create",
+        request=request,
+        entity="light_path_student",
+        entity_id=record.id,
+        description="دانشجوی مسیر نور توسط مدیر ایجاد شد",
+    )
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.post("/quran-classes")
 def create_quran_class(
@@ -249,8 +296,17 @@ def delete_quran_class_request(request_id: int, request: Request, db: Session = 
 
     record = db.query(QuranClassRequest).filter(QuranClassRequest.id == request_id).first()
     if record:
+        record_id = record.id
         db.delete(record)
         db.commit()
+        create_audit_log(
+            db=db,
+            action="delete",
+            request=request,
+            entity="quran_scholar",
+            entity_id=record_id,
+            description="دانشور آموزش نور حذف شد",
+        )
 
     return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -308,8 +364,17 @@ def delete_light_path_student(student_id: int, request: Request, db: Session = D
 
     record = db.query(LightPathStudent).filter(LightPathStudent.id == student_id).first()
     if record:
+        record_id = record.id
         db.delete(record)
         db.commit()
+        create_audit_log(
+            db=db,
+            action="delete",
+            request=request,
+            entity="light_path_student",
+            entity_id=record_id,
+            description="دانشجوی مسیر نور حذف شد",
+        )
 
     return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
