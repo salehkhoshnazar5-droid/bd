@@ -3,99 +3,73 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="mb-0">📊 داشبورد مدیر</h4>
-  <div>
     <a href="/admin/logout" class="btn btn-outline-danger btn-sm">خروج</a>
-  </div>
 </div>
-
-<div class="row mb-4">
-  <div class="col-md-4">
-    <div class="card text-center shadow-sm border-primary">
-      <div class="card-body">
-        <h6 class="text-muted">تعداد کاربران</h6>
-        <h2 class="text-primary">{{ users|length }}</h2>
-      </div>
-    </div>
-
-  </div>
-  <div class="col-md-4">
-    <div class="card text-center shadow-sm border-success">
-      <div class="card-body">
-        <h6 class="text-muted">کل رویدادها</h6>
-        <h2 class="text-success">{{ stats.total_logs }}</h2>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card text-center shadow-sm border-info">
-      <div class="card-body">
-        <h6 class="text-muted">درخواست کلاس قرآن</h6>
-        <h2 class="text-info">{{ quran_class_requests|length }}</h2>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3">
-    <div class="card text-center shadow-sm border-warning">
-      <div class="card-body">
-        <h6 class="text-muted">دانش‌آموزان مسیر نور</h6>
-        <h2 class="text-warning">{{ light_path_students|length }}</h2>
-      </div>
-    </div>
-  </div>
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card text-center shadow-sm border-primary"><div class="card-body"><h6 class="text-muted">تعداد کاربران</h6><h2 class="text-primary">{{ users|length }}</h2></div></div></div>
+  <div class="col-md-3"><div class="card text-center shadow-sm border-success"><div class="card-body"><h6 class="text-muted">کل رویدادها</h6><h2 class="text-success">{{ stats.total_logs }}</h2></div></div></div>
+  <div class="col-md-3"><div class="card text-center shadow-sm border-info"><div class="card-body"><h6 class="text-muted">درخواست‌های آموزش نور</h6><h2 class="text-info">{{ quran_class_requests|length }}</h2></div></div></div>
+  <div class="col-md-3"><div class="card text-center shadow-sm border-warning"><div class="card-body"><h6 class="text-muted">دانشجویان مسیر نور</h6><h2 class="text-warning">{{ light_path_rows|length }}</h2></div></div></div>
 </div>
 
 <div class="card mb-4 shadow-sm">
-  <div class="card-header bg-primary text-white">👥 لیست کاربران ثبت‌شده</div>
+  <div class="card-header bg-success text-white">A) مدیریت کلاس‌های قرآن</div>
   <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead>
+        <form method="post" action="/admin/quran-classes" class="row g-2 mb-4">
+      <div class="col-md-4"><input name="title" class="form-control" placeholder="نام کلاس" required></div>
+      <div class="col-md-3">
+        <select name="level" class="form-select" required>
+          {% for current_level in range(1, 10) %}
+          <option value="{{ current_level }}">سطح {{ current_level }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><input name="description" class="form-control" placeholder="توضیحات"></div>
+      <div class="col-md-2 d-grid"><button class="btn btn-success" type="submit">افزودن کلاس</button></div>
+    </form>
+
+    <h6 class="mb-2">لیست کلاس‌های قرآن</h6>
+    <div class="table-responsive mb-4">
+      <table class="table table-striped align-middle">
+        <thead><tr><th>عنوان</th><th>سطح</th><th>توضیحات</th><th>تاریخ ثبت</th><th>مدیریت</th></tr></thead>
+    <tbody>
+          {% for quran_class in quran_classes %}
           <tr>
-            <th>نام کامل</th>
-            <th>شماره دانشجویی</th>
-            <th>کد ملی</th>
-            <th>نقش</th>
-            <th>تاریخ ثبت‌نام</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for user in users %}
-          <tr>
-            <td>{{ user.profile.first_name if user.profile else '-' }} {{ user.profile.last_name if user.profile else '' }}</td>
-            <td>{{ user.student_number }}</td>
-            <td>{{ user.profile.national_code if user.profile else '-' }}</td>
-            <td><span class="badge bg-secondary">کاربر</span></td>
-            <td>{{ format_persian_datetime(user.created_at) if user.created_at else '-' }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" href="/admin/users/{{ user.id }}">جزئیات</a></td>
+                        <td>{{ quran_class.title }}</td>
+            <td>{{ quran_class.level }}</td>
+            <td>{{ quran_class.description or '-' }}</td>
+            <td>{{ format_persian_datetime(quran_class.created_at) if quran_class.created_at else '-' }}</td>
+            <td>
+              <form method="post" action="/admin/quran-classes/{{ quran_class.id }}/edit" class="d-flex flex-column gap-1 mb-2">
+                <input name="title" class="form-control form-control-sm" value="{{ quran_class.title }}" required>
+                <div class="d-flex gap-1">
+                  <select name="level" class="form-select form-select-sm" required>
+                    {% for current_level in range(1, 10) %}
+                    <option value="{{ current_level }}" {% if current_level == quran_class.level %}selected{% endif %}>{{ current_level }}</option>
+                    {% endfor %}
+                  </select>
+                  <input name="description" class="form-control form-control-sm" value="{{ quran_class.description or '' }}" placeholder="توضیحات">
+                </div>
+                <button class="btn btn-sm btn-outline-primary" type="submit">ذخیره</button>
+              </form>
+              <form method="post" action="/admin/quran-classes/{{ quran_class.id }}/delete">
+                <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+              </form>
+            </td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="6" class="text-center text-muted">کاربری یافت نشد.</td>
+            <tr><td colspan="5" class="text-center text-muted">کلاسی ثبت نشده است.</td></tr>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </div>
-</div>
 
-<div class="card mb-4 shadow-sm">
-  <div class="card-header bg-success text-white">مدیریت کلاس‌های قرآن (بخش نور)</div>
-  <div class="card-body">
+    <h6 class="mb-2">ثبت‌نام دانشجویان (نام و سطح)</h6>
     <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>نام</th>
-            <th>نام خانوادگی</th>
-            <th>سطح</th>
-            <th>تاریخ ثبت</th>
-            <th>مدیریت</th>
-          </tr>
-        </thead>
+      <table class="table table-hover align-middle">
+        <thead><tr><th>نام</th><th>نام خانوادگی</th><th>سطح</th><th>تاریخ ثبت</th><th>مدیریت</th></tr></thead>
         <tbody>
           {% for request_item in quran_class_requests %}
           <tr>
@@ -104,7 +78,7 @@
             <td>{{ request_item.level }}</td>
             <td>{{ format_persian_datetime(request_item.created_at) if request_item.created_at else '-' }}</td>
             <td>
-              <form method="post" action="/admin/quran-classes/{{ request_item.id }}/delete">
+              <form method="post" action="/admin/quran-requests/{{ request_item.id }}/delete">
                 <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
               </form>
             </td>
@@ -121,36 +95,36 @@
 </div>
 
 <div class="card mb-4 shadow-sm">
-  <div class="card-header bg-warning">مدیریت دانش‌آموزان مسیر نور</div>
+  <div class="card-header bg-warning">B) مدیریت اطلاعات دانشوران مسیر نور</div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-striped align-middle">
-        <thead>
-          <tr>
-            <th>نام</th>
-            <th>نام خانوادگی</th>
-            <th>شماره دانشجویی</th>
-            <th>تاریخ ثبت</th>
-            <th>مدیریت</th>
-          </tr>
-        </thead>
+        <thead><tr><th>نام</th><th>نام خانوادگی</th><th>سطح</th><th>وضعیت</th><th>شماره دانشجویی</th><th>تاریخ ثبت</th><th>مدیریت</th></tr></thead>
         <tbody>
-          {% for student in light_path_students %}
+          {% for row in light_path_rows %}
           <tr>
-            <td>{{ student.first_name or '-' }}</td>
-            <td>{{ student.last_name or '-' }}</td>
-            <td>{{ student.student_number or '-' }}</td>
-            <td>{{ format_persian_datetime(student.created_at) if student.created_at else '-' }}</td>
+            <td>{{ row.record.first_name or '-' }}</td>
+            <td>{{ row.record.last_name or '-' }}</td>
+            <td>{{ row.level }}</td>
+            <td><span class="badge bg-secondary">{{ row.status }}</span></td>
+            <td>{{ row.record.student_number or '-' }}</td>
+            <td>{{ format_persian_datetime(row.record.created_at) if row.record.created_at else '-' }}</td>
             <td>
-              <form method="post" action="/admin/light-path-students/{{ student.id }}/delete">
+              <form method="post" action="/admin/light-path-students/{{ row.record.id }}/edit" class="d-flex flex-column gap-1 mb-2">
+                <div class="d-flex gap-1">
+                  <input name="first_name" class="form-control form-control-sm" value="{{ row.record.first_name or '' }}" required>
+                  <input name="last_name" class="form-control form-control-sm" value="{{ row.record.last_name or '' }}" required>
+                </div>
+                <input name="student_number" class="form-control form-control-sm" value="{{ row.record.student_number or '' }}" placeholder="شماره دانشجویی">
+                <button class="btn btn-sm btn-outline-primary" type="submit">ذخیره</button>
+              </form>
+              <form method="post" action="/admin/light-path-students/{{ row.record.id }}/delete">
                 <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
               </form>
             </td>
           </tr>
           {% else %}
-          <tr>
-            <td colspan="5" class="text-center text-muted">رکوردی ثبت نشده است.</td>
-          </tr>
+          <tr><td colspan="7" class="text-center text-muted">رکوردی ثبت نشده است.</td></tr>
           {% endfor %}
         </tbody>
       </table>

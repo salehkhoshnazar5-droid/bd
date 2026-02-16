@@ -6,83 +6,44 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
+        <div class="col-lg-10">
             <div class="card shadow-lg border-0">
                 <div class="card-body p-5">
-                    <h1 class="display-4 mb-4 text-primary">
-                        <i class="bi bi-people-fill"></i>
-                        سامانه مدیریت بسیج دانشجویی
-                    </h1>
+                    <h1 class="display-6 mb-4 text-primary text-center">انتخاب بخش سامانه نور</h1>
 
-                    <p class="lead mb-5">
-                        به سامانه احراز هویت بسیج دانشجویی خوش آمدید.
-                        این سیستم جهت تسهیل در احراز هویت دانشجویان عضو بسیج طراحی شده است.
-                    </p>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-success">
+                                <div class="card-body text-center">
+                                    <h3 class="card-title">
+                                        <i class="bi bi-door-open fs-1 text-success"></i>
+                                    <h4 class="mb-3">مسیر نور</h4>
+                                    <p class="text-muted">سامانه احراز هویت بسیج دانشجویی</p>
+                                    <p> </p>
+                                    <div class="d-grid gap-2">
+                                        <a href="/ui-auth/login" class="btn btn-primary">ورود</a>
+                                        <a href="/ui-auth/register" class="btn btn-success">ثبت‌نام</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="row mt-5">
-                        <div class="col-md-6 mb-4">
+                        <div class="col-md-6">
                             <div class="card h-100 border-primary">
                                 <div class="card-body text-center">
                                     <h3 class="card-title">
                                         <i class="bi bi-door-open fs-1 text-success"></i>
-                                    </h3>
-                                    <h5 class="card-title">ورود به سیستم</h5>
-                                    <p class="card-text">
-                                        اگر قبلاً ثبت‌نام کرده‌اید، وارد حساب کاربری خود شوید.
-                                    </p>
-                                    <a href="/ui-auth/login" class="btn btn-primary btn-lg w-100">
-                                        <i class="bi bi-box-arrow-in-right"></i>
-                                        ورود
-                                    </a>
+                                    <h4 class="mb-3">آموزش نور</h4>
+                                    <p class="text-muted">سامانه ثبت‌نام کلاس قرآن</p>
+                                    <p>برای ثبت درخواست کلاس قرآن، وارد این بخش شوید.</p>
+                                    <p> </p>
+                                    <a href="/ui/dashboard/noor" class="btn btn-outline-primary w-100">ثبت درخواست</a>
                                 </div>
-
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100 border-success">
-                                <div class="card-body text-center">
-                                    <h3 class="card-title">
-                                        <i class="bi bi-person-plus fs-1 text-primary"></i>
-                                    </h3>
-                                    <h5 class="card-title">ثبت‌نام جدید</h5>
-                                    <p class="card-text">
-                                        اگر عضو بسیج دانشجویی هستید، ثبت‌نام کنید.
-                                    </p>
-                                    <a href="/ui-auth/register" class="btn btn-success btn-lg w-100">
-                                        <i class="bi bi-person-plus"></i>
-                                        ثبت‌نام
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="mt-3 text-center">
-                                    <a href="http://kerman_bd/" class="btn btn-outline-danger w-100">خروج</a>
                             </div>
                         </div>
                     </div>
-
-                    <div class="mt-5">
-                        <h4 class="mb-3">امکانات سیستم:</h4>
-                        <div class="row text-start">
-                            <div class="col-md-4">
-                                <ul class="list-unstyled">
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> مدیریت پروفایل</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> ثبت اطلاعات</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <ul class="list-unstyled">
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> گزارش‌گیری</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> مدیریت ثبت نام ها</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <ul class="list-unstyled">
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> ارتباط با مدیران</li>
-                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> امنیت بالا</li>
-                                </ul>
-                            </div>
-                        </div>
+                        <div class="mt-4 text-center">
+                        <a href="http://kerman_bd/" class="btn btn-outline-danger">خروج</a>
                     </div>
                 </div>
             </div>

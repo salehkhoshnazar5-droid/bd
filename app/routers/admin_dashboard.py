@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from app.core.deps import get_db
 from app.models.audit_log import AuditLog
-from app.models.noor_program import LightPathStudent, QuranClassRequest
+from app.models.noor_program import LightPathStudent, QuranClass, QuranClassRequest
 from app.models.user import User
 from app.services.admin_auth_service import (
     authenticate_admin_password,
@@ -92,6 +92,16 @@ def admin_logout():
     response.delete_cookie("admin_access_token")
     return response
 
+def _build_quran_request_lookup(records: list[QuranClassRequest]) -> dict[int, QuranClassRequest]:
+    latest_by_user: dict[int, QuranClassRequest] = {}
+    for request_item in records:
+        if request_item.user_id is None:
+            continue
+        existing = latest_by_user.get(request_item.user_id)
+        if existing is None or (request_item.created_at and existing.created_at and request_item.created_at > existing.created_at):
+            latest_by_user[request_item.user_id] = request_item
+    return latest_by_user
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not is_admin_authenticated(request):
@@ -112,7 +122,13 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     quran_class_requests = (
         db.query(QuranClassRequest)
         .order_by(QuranClassRequest.created_at.desc())
-        .limit(100)
+        .limit(200)
+        .all()
+    )
+
+    quran_classes = (
+        db.query(QuranClass)
+        .order_by(QuranClass.created_at.desc())
         .all()
     )
 
@@ -123,6 +139,19 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    latest_request_by_user = _build_quran_request_lookup(quran_class_requests)
+    light_path_rows = []
+    for student in light_path_students:
+        latest_request = latest_request_by_user.get(student.user_id) if student.user_id else None
+        light_path_rows.append(
+            {
+                "record": student,
+                "level": latest_request.level if latest_request else "-",
+                "status": "فعال" if student.user_id else "ناشناس",
+            }
+        )
+
+
     return templates.TemplateResponse(
         "admin/dashboard.html",
         {
@@ -130,12 +159,79 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "users": users,
             "stats": stats,
             "quran_class_requests": quran_class_requests,
-            "light_path_students": light_path_students,
+            "quran_classes": quran_classes,
+            "light_path_rows": light_path_rows,
             "format_persian_datetime": format_persian_datetime,
         },
     )
 
-@router.post("/quran-classes/{request_id}/delete")
+@router.post("/quran-classes")
+def create_quran_class(
+    request: Request,
+    title: str = Form(...),
+    level: int = Form(...),
+    description: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    if level not in range(1, 10):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="سطح باید بین ۱ تا ۹ باشد")
+
+    db.add(
+        QuranClass(
+            title=title.strip(),
+            level=level,
+            description=description.strip() or None,
+        )
+    )
+    db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/quran-classes/{class_id}/edit")
+def edit_quran_class(
+    class_id: int,
+    request: Request,
+    title: str = Form(...),
+    level: int = Form(...),
+    description: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    class_record = db.query(QuranClass).filter(QuranClass.id == class_id).first()
+    if class_record is None:
+        raise HTTPException(status_code=404, detail="کلاس یافت نشد")
+
+    if level not in range(1, 10):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="سطح باید بین ۱ تا ۹ باشد")
+
+    class_record.title = title.strip()
+    class_record.level = level
+    class_record.description = description.strip() or None
+    db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/quran-classes/{class_id}/delete")
+def delete_quran_class(class_id: int, request: Request, db: Session = Depends(get_db)):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    class_record = db.query(QuranClass).filter(QuranClass.id == class_id).first()
+    if class_record:
+        db.delete(class_record)
+        db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/quran-requests/{request_id}/delete")
 def delete_quran_class_request(request_id: int, request: Request, db: Session = Depends(get_db)):
     if not is_admin_authenticated(request):
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -147,6 +243,52 @@ def delete_quran_class_request(request_id: int, request: Request, db: Session = 
 
     return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
+@router.post("/light-path-students/{student_id}/edit")
+def edit_light_path_student(
+    student_id: int,
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    student_number: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    record = db.query(LightPathStudent).filter(LightPathStudent.id == student_id).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="دانشجو یافت نشد")
+
+    record.first_name = first_name.strip()
+    record.last_name = last_name.strip()
+    record.student_number = student_number.strip() or None
+    db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/light-path-students/{student_id}/edit")
+def edit_light_path_student(
+    student_id: int,
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    student_number: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not is_admin_authenticated(request):
+        return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    record = db.query(LightPathStudent).filter(LightPathStudent.id == student_id).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="دانشجو یافت نشد")
+
+    record.first_name = first_name.strip()
+    record.last_name = last_name.strip()
+    record.student_number = student_number.strip() or None
+    db.commit()
+
+    return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.post("/light-path-students/{student_id}/delete")
 def delete_light_path_student(student_id: int, request: Request, db: Session = Depends(get_db)):
@@ -172,26 +314,4 @@ def admin_profile(request: Request):
 def admin_user_details(user_id: int, request: Request, db: Session = Depends(get_db)):
     if not is_admin_authenticated(request):
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
-
-    user = (
-        db.query(User)
-        .options(joinedload(User.profile), joinedload(User.role))
-        .filter(User.id == user_id)
-        .first()
-    )
-
-    if not user:
-        raise HTTPException(status_code=404, detail="کاربر یافت نشد")
-
-
-    return templates.TemplateResponse(
-        "admin/user_details.html",
-        {
-            "request": request,
-            "user": user,
-            "format_persian_datetime": format_persian_datetime,
-            "user_total_changes": db.query(AuditLog).filter(AuditLog.user_id == user.id).count(),
-        },
-    )
-
 

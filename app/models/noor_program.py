@@ -17,6 +17,16 @@ class QuranClassRequest(Base):
 
     user = relationship("User")
 
+class QuranClass(Base):
+    __tablename__ = "quran_classes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100), nullable=False)
+    level = Column(Integer, nullable=False, index=True)
+    description = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 
 class LightPathStudent(Base):
     __tablename__ = "light_path_students"
