@@ -13,7 +13,7 @@
     <div class="card text-center shadow-sm border-primary">
       <div class="card-body">
         <h6 class="text-muted">تعداد کاربران</h6>
-        <h2 class="text-primary">{{ users|length }}</h2>
+        <h2 class="text-primary">{{ total_users }}</h2>
       </div>
     </div>
 
@@ -40,7 +40,7 @@
     <div class="card text-center shadow-sm border-warning">
       <div class="card-body">
         <h6 class="text-muted">دانش‌آموزان مسیر نور</h6>
-        <h2 class="text-warning">{{ light_path_students|length }}</h2>
+         <h2 class="text-warning">{{ light_path_students_count }}</h2>
       </div>
     </div>
   </div>
@@ -104,8 +104,10 @@
             <td>{{ request_item.level }}</td>
             <td>{{ format_persian_datetime(request_item.created_at) if request_item.created_at else '-' }}</td>
             <td>
-              <form method="post" action="/admin/quran-classes/{{ request_item.id }}/delete">
-                <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+              <form method="POST" action="/admin/users/{{ user.id }}/delete" onsubmit="return confirm('آیا از حذف این کاربر مطمئن هستید؟');">
+                   {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+              </form>
               </form>
             </td>
           </tr>
@@ -119,6 +121,4 @@
     </div>
   </div>
 </div>
-
-
 {% endblock %}

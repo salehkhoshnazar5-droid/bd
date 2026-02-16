@@ -151,9 +151,10 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(100),
     )
 
-    users_count = db.query(User).count()
     light_path_students_count = len(light_path_students)
-    total_users = users_count + light_path_students_count
+    quran_class_requests_count = len(quran_class_requests)
+    total_users = light_path_students_count + quran_class_requests_count
+
 
     deleted_events = (
         db.query(AuditLog)
@@ -163,7 +164,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         )
         .count()
     )
-    all_events = len(light_path_students) + len(quran_class_requests)
+    all_events = light_path_students_count + quran_class_requests_count
     total_events = all_events + deleted_events
 
 
@@ -190,7 +191,6 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "quran_classes": quran_classes,
             "light_path_rows": light_path_rows,
             "total_users": total_users,
-            "users_count": users_count,
             "light_path_students_count": light_path_students_count,
             "total_events": total_events,
             "format_persian_datetime": format_persian_datetime,
