@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, validator
 from typing import Optional
-from app.core.validators import validate_phone_number, validate_gender
+from pydantic import BaseModel, ConfigDict, Field, validator
+
+from app.core.validators import validate_gender, validate_phone_number
 
 
 class UserOut(BaseModel):
@@ -10,8 +11,7 @@ class UserOut(BaseModel):
     is_active: bool
     profile: Optional[dict] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProfileUpdate(BaseModel):
     phone_number: Optional[str] = Field(None)
@@ -26,11 +26,12 @@ class ProfileUpdate(BaseModel):
     def validate_gender_field(cls, value: Optional[str]) -> Optional[str]:
         return validate_gender(value)
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "phone_number": "09123456789",
                 "address": "کرمان، بلوار هوانیوز",
                 "gender": "brother"
             }
         }
+    )

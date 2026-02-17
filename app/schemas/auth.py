@@ -1,6 +1,8 @@
-from typing import Optional
-from pydantic import BaseModel, Field, validator
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field, validator
+
 from app.core.validators import (
     validate_national_code,
     validate_phone_number,
@@ -32,8 +34,8 @@ class RegisterRequest(BaseModel):
     def validate_phone_number_field(cls, value: str) -> str:
         return validate_phone_number(value)
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "first_name": "زهرا",
                 "last_name": "محمدی",
@@ -41,10 +43,10 @@ class RegisterRequest(BaseModel):
                 "national_code": "0123456789",
                 "phone_number": "09123456789",
                 "gender": "sister",
-                "address": "تهران، خیابان انقلاب"
+                "address": "تهران، خیابان انقلاب",
             }
         }
-
+    )
 
 class LoginRequest(BaseModel):
     national_code: str = Field(..., description="کد ملی ۱۰ رقمی")
@@ -58,14 +60,14 @@ class LoginRequest(BaseModel):
     def validate_login_student_number(cls, value: str) -> str:
         return validate_student_number(value)
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "national_code": "3200261196",
-                "student_number": "404370044"
+                "student_number": "404370044",
             }
         }
-
+    )
 class AdminLoginRequest(BaseModel):
     password: str = Field(..., description="رمز عبور مدیر", min_length=1)
 
@@ -74,23 +76,23 @@ class Token(BaseModel):
     token_type: str = Field(default="bearer", description="نوع توکن")
     expires_in: Optional[int] = Field(default=3600, description="زمان انقضا به ثانیه")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "expires_in": 3600
             }
         }
-
+    )
 class RegisterResponse(BaseModel):
     message: str = Field(..., description="پیام پاسخ")
     user_id: int = Field(..., description="شناسه کاربر ایجاد شده")
     student_number: str = Field(..., description="شماره دانشجویی")
     role: str = Field(..., description="نقش کاربر")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "message": "ثبت‌نام با موفقیت انجام شد",
                 "user_id": 1,
@@ -99,3 +101,4 @@ class RegisterResponse(BaseModel):
             }
         }
 
+    )

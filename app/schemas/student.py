@@ -1,10 +1,12 @@
-from pydantic import BaseModel, Field, validator
-from typing import Optional
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field, validator
 from app.core.validators import (
+validate_gender,
     validate_national_code,
     validate_phone_number,
-    validate_student_number, validate_gender,
+    validate_student_number,
 )
 
 class GenderEnum(str, Enum):
@@ -34,8 +36,7 @@ class StudentProfileBase(BaseModel):
     def validate_phone_number_field(cls, value: str) -> str:
         return validate_phone_number(value)
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudentProfileUpdate(BaseModel):
@@ -57,8 +58,7 @@ class StudentProfileUpdate(BaseModel):
         return validate_gender(value)
 
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminStudentUpdate(StudentProfileBase):
@@ -67,8 +67,7 @@ class AdminStudentUpdate(StudentProfileBase):
 
 class StudentProfileOut(StudentProfileBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudentProfileOutDB(BaseModel):
@@ -79,5 +78,4 @@ class StudentProfileOutDB(BaseModel):
     gender: GenderEnum
     address: Optional[str]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

@@ -104,11 +104,10 @@
             <td>{{ request_item.level }}</td>
             <td>{{ format_persian_datetime(request_item.created_at) if request_item.created_at else '-' }}</td>
             <td>
-              <form method="POST" action="/admin/users/{{ user.id }}/delete" onsubmit="return confirm('آیا از حذف این کاربر مطمئن هستید؟');">
-                   {% csrf_token %}
-                  <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
-              </form>
-              </form>
+               <form method="POST" action="/admin/light-path-students/{{ request_item.id }}/delete">
+                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                   <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+               </form>
             </td>
           </tr>
           {% else %}
