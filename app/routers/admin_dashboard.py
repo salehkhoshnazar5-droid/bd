@@ -104,6 +104,15 @@ def _query_with_noor_schema_repair(db: Session, build_query):
         ensure_noor_program_schema()
         return build_query().all()
 
+def _count_with_noor_schema_repair(db: Session, build_query) -> int:
+    try:
+        return build_query().count()
+    except OperationalError:
+        db.rollback()
+        logger.exception("Noor program count query failed; attempting schema repair and retry")
+        ensure_noor_program_schema()
+        return build_query().count()
+
 def _build_quran_request_lookup(records: list[QuranClassRequest]) -> dict[int, QuranClassRequest]:
     latest_by_user: dict[int, QuranClassRequest] = {}
     for request_item in records:
@@ -151,9 +160,16 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(100),
     )
 
-    light_path_students_count = len(light_path_students)
-    quran_class_requests_count = len(quran_class_requests)
-    total_users = light_path_students_count + quran_class_requests_count
+    users_count = db.query(User).count()
+    light_path_students_count = _count_with_noor_schema_repair(
+        db,
+        lambda: db.query(LightPathStudent),
+    )
+    quran_class_requests_count = _count_with_noor_schema_repair(
+        db,
+        lambda: db.query(QuranClassRequest),
+    )
+    total_users = users_count  + quran_class_requests_count
 
 
     deleted_events = (
@@ -192,6 +208,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "light_path_rows": light_path_rows,
             "total_users": total_users,
             "light_path_students_count": light_path_students_count,
+            "quran_class_requests_count": quran_class_requests_count,
             "total_events": total_events,
             "format_persian_datetime": format_persian_datetime,
         },
@@ -390,3 +407,30 @@ def admin_user_details(user_id: int, request: Request, db: Session = Depends(get
     if not is_admin_authenticated(request):
         return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
+    user = (
+        db.query(User)
+        .options(joinedload(User.profile), joinedload(User.role))
+        .filter(User.id == user_id)
+        .first()
+    )
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="کاربر یافت نشد")
+
+    user_total_changes = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.user_id == user.id,
+            AuditLog.action.in_(["create", "update", "delete"]),
+        )
+        .count()
+    )
+
+    return templates.TemplateResponse(
+        "admin/user_details.html",
+        {
+            "request": request,
+            "user": user,
+            "user_total_changes": user_total_changes,
+            "format_persian_datetime": format_persian_datetime,
+        },
+    )

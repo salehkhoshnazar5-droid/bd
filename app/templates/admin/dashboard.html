@@ -31,7 +31,7 @@
     <div class="card text-center shadow-sm border-info">
       <div class="card-body">
         <h6 class="text-muted">درخواست کلاس قرآن</h6>
-        <h2 class="text-info">{{ quran_class_requests|length }}</h2>
+        <h2 class="text-info">{{ quran_class_requests_count }}</h2>
       </div>
     </div>
   </div>
@@ -40,7 +40,7 @@
     <div class="card text-center shadow-sm border-warning">
       <div class="card-body">
         <h6 class="text-muted">دانش‌آموزان مسیر نور</h6>
-         <h2 class="text-warning">{{ light_path_students_count }}</h2>
+         <h2 class="text-info">{{ light_path_students_count }}</h2>
       </div>
     </div>
   </div>
@@ -104,7 +104,7 @@
             <td>{{ request_item.level }}</td>
             <td>{{ format_persian_datetime(request_item.created_at) if request_item.created_at else '-' }}</td>
             <td>
-               <form method="POST" action="/admin/light-path-students/{{ request_item.id }}/delete">
+               <form method="POST" action="/admin/quran-requests/{{ request_item.id }}/delete">
                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                    <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
                </form>
