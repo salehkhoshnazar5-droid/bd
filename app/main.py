@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 validate_runtime_compatibility()
 
 SWAGGER_OPENAPI_URL = "/openapi.json"
-SWAGGER_TITLE = "سامانه مدیریت بسیج دانشجویی"
+SWAGGER_TITLE = "سامانه نور"
 SWAGGER_OAUTH2_REDIRECT_URL = "/docs/oauth2-redirect"
 
 @asynccontextmanager
@@ -94,8 +94,8 @@ async def create_default_roles():
         db.close()
 # ایجاد برنامه FastAPI
 app = FastAPI(
-    title="سامانه مدیریت بسیج دانشجویی",
-    description="سیستم احراز هویت بسیج دانشجویی",
+    title="سامانه نور",
+    description="به سیستم احراز هویت نور خوش آمدید",
     version="1.0.0",
     contact={
         "name": "تیم توسعه بسیج",
@@ -278,80 +278,88 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def read_root():
     """صفحه اصلی API."""
     return """
-    <!DOCTYPE html>
-    <html lang="fa" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>سامانه مدیریت بسیج دانشجویی</title>
-        <link rel="icon" href="/static/icon/favicon.ico" type="image/x-icon">
-        <link rel="icon" href="/static/icon/android-chrome-192x192.png" type="image/png" sizes="192x192">
-        <link rel="icon" href="/static/icon/android-chrome-512x512.png" type="image/png" sizes="512x512">
-        <link rel="apple-touch-icon" sizes="180x180" href="/static/icon/apple-touch-icon.png">
-        <link rel="icon" type="image/png" sizes="32x32" href="/static/icon/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/static/icon/favicon-16x16.png">
-        <link rel="manifest" href="/static/icon/site.webmanifest">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-        <style>
-            body { font-family: Vazirmatn, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-            .card { border-radius: 20px; border: none; }
-            .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
-        </style>
-    </head>
-    <body class="min-vh-100 d-flex align-items-center">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-8 col-lg-6">
-                    <div class="card shadow-lg">
-                        <div class="card-body text-center p-5">
-                            <div class="mb-4">
-                                <i class="bi bi-people-fill display-1 text-primary"></i>
-                            </div>
-                            <h1 class="display-4 mb-3 text-dark">سامانه مدیریت بسیج</h1>
-                            <p class="lead mb-4 text-muted">
-                                سیستم احراز هویت بسیج دانشجویی
-                            </p>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه نور</title>
+    <link rel="icon" href="/static/icon/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/static/icon/android-chrome-192x192.png" type="image/png" sizes="192x192">
+    <link rel="icon" href="/static/icon/android-chrome-512x512.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icon/favicon-16x16.png">
+    <link rel="manifest" href="/static/icon/site.webmanifest">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Vazirmatn, sans-serif;
+            background: linear-gradient(135deg, #2e8b57 0%, #006400 100%); /* سبز تیره به عنوان پس‌زمینه */
+        }
+        .card {
+            border-radius: 20px;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6dbb6d 0%, #2e8b57 100%); /* سبز روشن برای دکمه‌ها */
+            border: none;
+        }
+    </style>
+</head>
+<body class="min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center p-5">
+                        <div class="mb-4">
+                            <i class="bi bi-people-fill display-1 text-primary"></i>
+                        </div>
+                        <h1 class="display-4 mb-3 text-dark">سامانه نور</h1>
+                        <p class="lead mb-4 text-muted">
+                            به سیستم احراز هویت نور خوش آمدید
+                        </p>
 
-                            <a href="/admin/login" class="btn btn-primary btn-lg px-4">
-                                    <i class="bi bi-shield-lock me-2"></i>
-                                    رابط مدیریتی
-                                </a>
-                                <a href="/ui-auth" class="btn btn-outline-primary btn-lg px-4">
-                                    <i class="bi bi-display me-2"></i>
-                                    رابط کاربری
-                                </a>
-                            </div>
+                        <a href="/admin/login" class="btn btn-primary btn-lg px-4">
+                                <i class="bi bi-shield-lock me-2"></i>
+                                رابط مدیریتی
+                            </a>
+                        <a href="/ui-auth" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="bi bi-display me-2"></i>
+                            رابط کاربری
+                        </a>
+                    </div>
 
-                            <div class="row mt-5">
-                                <div class="col-md-6">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body">
-                                            <h5><i class="bi bi-shield-check text-success"></i> امنیت بالا</h5>
-                                            <p class="small text-muted">احراز هویت JWT و رمزنگاری پیشرفته</p>
-                                        </div>
-                                    </div>
+                    <div class="row mt-5">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h5><i class="bi bi-shield-check text-success"></i> امنیت بالا</h5>
+                                    <p class="small text-muted">احراز هویت JWT و رمزنگاری پیشرفته</p>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body">
-                                            <h5><i class="bi bi-speedometer2 text-primary"></i> عملکرد سریع</h5>
-                                            <p class="small text-muted">پشتیبانی از هزاران کاربر همزمان</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 text-muted small">
-                                <p>نسخه ۱.۰.۰ | توسعه‌یافته با FastAPI و Python</p>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h5><i class="bi bi-speedometer2 text-primary"></i> عملکرد سریع</h5>
+                                    <p class="small text-muted">پشتیبانی از هزاران کاربر همزمان</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-muted small">
+                        <p>نسخه ۱.۰.۰ | توسعه‌یافته با FastAPI و Python</p>
                     </div>
                 </div>
             </div>
         </div>
-    </body>
-    </html>
+    </div>
+</body>
+</html>
     """
 
 
@@ -360,9 +368,9 @@ async def read_root():
 async def get_api_info():
     """دریافت اطلاعات کلی API."""
     return {
-        "name": "سامانه مدیریت بسیج دانشجویی",
+        "name": "سامانه نور",
         "version": "1.0.0",
-        "description": "سیستم احراز هویت بسیج دانشجویی",
+        "description": "به سیستم احراز هویت نور خوش آمدید",
         "status": "active",
         "author": "تیم توسعه بسیج",
         "endpoints": {

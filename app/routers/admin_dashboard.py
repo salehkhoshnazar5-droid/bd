@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.core.database import ensure_noor_program_schema
 from app.core.deps import get_db
@@ -105,13 +106,19 @@ def _query_with_noor_schema_repair(db: Session, build_query):
         return build_query().all()
 
 def _count_with_noor_schema_repair(db: Session, build_query) -> int:
+    def run_count() -> int:
+        # Use an explicit COUNT(*) over a subquery so this helper works
+        # consistently for both plain and filtered query builders.
+        query = build_query().order_by(None)
+        counted_rows = db.query(func.count()).select_from(query.subquery()).scalar()
+        return counted_rows or 0
     try:
-        return build_query().count()
+        return run_count()
     except OperationalError:
         db.rollback()
         logger.exception("Noor program count query failed; attempting schema repair and retry")
         ensure_noor_program_schema()
-        return build_query().count()
+        return run_count()
 
 def _build_quran_request_lookup(records: list[QuranClassRequest]) -> dict[int, QuranClassRequest]:
     latest_by_user: dict[int, QuranClassRequest] = {}
@@ -200,6 +207,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         "admin/dashboard.html",
         {
+            "users_count": users_count,
             "request": request,
             "users": users,
             "stats": stats,

@@ -9,29 +9,29 @@
 </div>
 
 <div class="row mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card text-center shadow-sm border-primary">
       <div class="card-body">
-        <h6 class="text-muted">تعداد کاربران</h6>
+        <h6 class="text-muted">تعداد کل کاربران</h6>
         <h2 class="text-primary">{{ total_users }}</h2>
       </div>
     </div>
 
   </div>
-  <div class="col-md-4">
-    <div class="card text-center shadow-sm border-success">
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm border-info">
       <div class="card-body">
         <h6 class="text-muted">کل رویدادها</h6>
-        <h2 class="text-success">{{ stats.total_logs }}</h2>
+        <h2 class="text-info">{{ stats.total_logs }}</h2>
       </div>
     </div>
   </div>
 
-  <div class="col-md-4">
-    <div class="card text-center shadow-sm border-info">
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm border-success">
       <div class="card-body">
-        <h6 class="text-muted">درخواست کلاس قرآن</h6>
-        <h2 class="text-info">{{ quran_class_requests_count }}</h2>
+        <h6 class="text-muted">تعداد دانشوران قرآن</h6>
+        <h2 class="text-success">{{ quran_class_requests_count }}</h2>
       </div>
     </div>
   </div>
@@ -39,15 +39,15 @@
   <div class="col-md-3">
     <div class="card text-center shadow-sm border-warning">
       <div class="card-body">
-        <h6 class="text-muted">دانش‌آموزان مسیر نور</h6>
-         <h2 class="text-info">{{ light_path_students_count }}</h2>
+        <h6 class="text-muted">تعداد دانشجویان</h6>
+         <h2 class="text-warning">{{ users_count }}</h2>
       </div>
     </div>
   </div>
 </div>
 
-<div class="card mb-4 shadow-sm">
-  <div class="card-header bg-warning">مدیریت دانش‌آموزان مسیر نور</div>
+<div class="card mb-3 shadow-sm">
+  <div class="card-header bg-warning">مدیریت دانشجویان مسیر نور</div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-hover align-middle">
@@ -83,7 +83,7 @@
 </div>
 
 <div class="card mb-4 shadow-sm">
-  <div class="card-header bg-success text-white">مدیریت کلاس‌های قرآن (بخش نور)</div>
+  <div class="card-header bg-success text-white">مدیریت دانشوران آموزش نور</div>
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-striped align-middle">

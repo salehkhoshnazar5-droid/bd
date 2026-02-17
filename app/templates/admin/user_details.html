@@ -29,7 +29,6 @@
       <li class="list-group-item"><strong>آدرس:</strong> {{ user.profile.address if user.profile else '-' }}</li>
       <li class="list-group-item"><strong>نقش:</strong> کاربر</li>
       <li class="list-group-item"><strong>تاریخ ثبت‌نام:</strong> {{ format_persian_datetime(user.created_at, True) if user.created_at else '-' }}</li>
-      <li class="list-group-item"><strong>تعداد تغییرات اطلاعات:</strong> {{ user_total_changes }}</li>
     </ul>
   </div>
 </div>

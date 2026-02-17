@@ -37,8 +37,8 @@ async def home_page(request: Request):
         "home.html",
         {
             "request": request,
-            "title": "سامانه مدیریت بسیج",
-            "welcome_message": "به سامانه مدیریت بسیج دانشجویی خوش آمدید"
+            "title": "سامانه نور",
+            "welcome_message": "به سامانه نور خوش آمدید"
         }
     )
 
